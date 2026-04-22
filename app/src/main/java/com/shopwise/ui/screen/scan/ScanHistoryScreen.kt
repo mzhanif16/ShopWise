@@ -1,5 +1,7 @@
 package com.shopwise.ui.screen.scan
 
+import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -101,7 +103,7 @@ fun ScanHistoryScreen(
                 }
 
                 item {
-                    GemmaInsightCard()
+                    GemmaInsightCard(scans)
                     Spacer(modifier = Modifier.height(40.dp))
                 }
             }
@@ -158,6 +160,11 @@ fun HistoryItem(
     imageUri: String?,
     hasSideIndicator: Boolean = false
 ) {
+    // Log URI untuk debugging
+    LaunchedEffect(imageUri) {
+        Log.d("ScanHistory", "Loading Item: $name, URI: $imageUri")
+    }
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -186,19 +193,24 @@ fun HistoryItem(
                         .background(Color(0xFFF1F1F1)),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (imageUri != null) {
+                    if (!imageUri.isNullOrBlank()) {
                         AsyncImage(
-                            model = imageUri,
+                            model = Uri.parse(imageUri), 
                             contentDescription = null,
                             modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
+                            contentScale = ContentScale.Crop,
+                            onLoading = { Log.d("ScanHistory", "Image Loading: $imageUri") },
+                            onSuccess = { Log.d("ScanHistory", "Image Success: $imageUri") },
+                            onError = { error -> 
+                                Log.e("ScanHistory", "Image Error: ${error.result.throwable.message} for URI: $imageUri")
+                            }
                         )
                     } else {
                         Icon(
                             painter = painterResource(R.drawable.img_check),
                             contentDescription = null,
-                            tint = Color.Unspecified,
-                            modifier = Modifier.size(60.dp)
+                            tint = Color.LightGray,
+                            modifier = Modifier.size(40.dp)
                         )
                     }
                 }
@@ -231,7 +243,12 @@ fun HistoryItem(
 }
 
 @Composable
-fun GemmaInsightCard() {
+fun GemmaInsightCard(scans: List<ScanHistory>) {
+    val totalScans = scans.size
+    val safeScans = scans.count { it.isSafe }
+    val safePercentage = if (totalScans > 0) (safeScans.toFloat() / totalScans.toFloat()) else 0f
+    val percentageText = (safePercentage * 100).toInt()
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -255,14 +272,14 @@ fun GemmaInsightCard() {
             }
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "You're consistently choosing safe products. 85% of your recent scans align with your allergy profile. Great job!",
+                text = "You've scanned $totalScans items in total. $percentageText% of your choices were safe for your profile. ${if (safePercentage > 0.7) "Great job!" else "Stay cautious!"}",
                 fontSize = 14.sp,
                 color = Color(0xFF0D47A1),
                 lineHeight = 20.sp
             )
             Spacer(modifier = Modifier.height(16.dp))
             LinearProgressIndicator(
-                progress = { 0.85f },
+                progress = { safePercentage },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp)

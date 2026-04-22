@@ -8,11 +8,16 @@ import com.shopwise.core.GemmaUtils
 import com.shopwise.core.UserPreferences
 import com.shopwise.core.database.AppDatabase
 import com.shopwise.core.database.ScanHistory
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
+import java.util.UUID
 
 class AnalysisResultViewModel(application: Application) : AndroidViewModel(application) {
     private val context = application.applicationContext
@@ -48,7 +53,7 @@ class AnalysisResultViewModel(application: Application) : AndroidViewModel(appli
             _analysisResult.value = ""
             
             // Collect results from gemmaManager
-            val job = launch {
+            launch {
                 gemmaManager.partialResults.collect { (text, isDone) ->
                     if (text.isNotEmpty()) {
                         _analysisResult.value += text
@@ -57,8 +62,8 @@ class AnalysisResultViewModel(application: Application) : AndroidViewModel(appli
                         _isAnalyzing.value = false
                         val finalResult = _analysisResult.value
                         
-                        // Extract Info and Save to Database
-                        saveToHistory(finalResult, imageUri)
+                        // Extract Info and Save to Database (Including saving bitmap to local file)
+                        saveToHistory(finalResult, bitmap)
                         
                         onComplete(finalResult)
                         this@launch.cancel()
@@ -70,7 +75,21 @@ class AnalysisResultViewModel(application: Application) : AndroidViewModel(appli
         }
     }
 
-    private fun saveToHistory(result: String, imageUri: String?) {
+    private suspend fun saveBitmapToFile(bitmap: Bitmap): String? = withContext(Dispatchers.IO) {
+        try {
+            val fileName = "scan_${UUID.randomUUID()}.jpg"
+            val file = File(context.filesDir, fileName)
+            FileOutputStream(file).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+            }
+            file.absolutePath
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    private fun saveToHistory(result: String, bitmap: Bitmap) {
         val isSafe = result.contains("AMAN", ignoreCase = false) && !result.contains("TIDAK AMAN", ignoreCase = false)
         
         // Extract product name: ambil baris pertama atau 5 kata pertama
@@ -78,12 +97,13 @@ class AnalysisResultViewModel(application: Application) : AndroidViewModel(appli
         val productName = if (firstLine.length > 30) firstLine.take(27) + "..." else firstLine
 
         viewModelScope.launch {
+            val localPath = saveBitmapToFile(bitmap)
             db.scanHistoryDao().insertScan(
                 ScanHistory(
                     productName = productName,
                     finalResult = result,
                     isSafe = isSafe,
-                    imageUri = imageUri
+                    imageUri = localPath // Simpan path internal, bukan content:// URI
                 )
             )
         }

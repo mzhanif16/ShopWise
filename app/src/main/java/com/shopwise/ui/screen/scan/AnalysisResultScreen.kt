@@ -3,7 +3,9 @@ package com.shopwise.ui.screen.scan
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.util.Log
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -32,6 +34,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -42,6 +45,7 @@ import androidx.navigation.NavController
 import com.shopwise.R
 import com.shopwise.ui.navigation.Routes
 import com.shopwise.ui.theme.PrimaryColor
+import dev.jeziellago.compose.markdowntext.MarkdownText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -61,6 +65,7 @@ fun AnalysisResultScreen(
 
     // Load bitmap and start analysis
     LaunchedEffect(imageUri) {
+        Log.d("AnalysisResult", "Loading URI: $imageUri")
         if (!hasStartedAnalysis) {
             withContext(Dispatchers.IO) {
                 try {
@@ -69,16 +74,15 @@ fun AnalysisResultScreen(
                         val loadedBitmap = BitmapFactory.decodeStream(inputStream)
                         bitmap = loadedBitmap
                         withContext(Dispatchers.Main) {
-                            viewModel.analyzePicture(loadedBitmap,imageUri = imageUri) { finalResult ->
-                                // Cari kata "AMAN" (case sensitive) di akhir generate
-                                // Pastikan tidak ada kata "TIDAK AMAN" yang mendahuluinya untuk akurasi
+                            Log.d("AnalysisResult", "Bitmap loaded successfully, starting analysis")
+                            viewModel.analyzePicture(loadedBitmap, imageUri = imageUri) { finalResult ->
                                 isSafe = finalResult.contains("AMAN", ignoreCase = false) && 
                                          !finalResult.contains("TIDAK AMAN", ignoreCase = false)
                             }
                         }
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e("AnalysisResult", "Failed to load bitmap from URI", e)
                 }
             }
             hasStartedAnalysis = true
@@ -156,6 +160,17 @@ fun ResultContent(
     isSafe: Boolean?,
     analysisResult: String
 ) {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseAlpha"
+    )
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -206,7 +221,7 @@ fun ResultContent(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = when(isSafe) {
                             true -> PrimaryColor
-                            false -> Color(0xFF00897B) // Di sini tombol ke dashboard biasanya tetap warna brand
+                            false -> Color(0xFF00897B)
                             null -> Color.Gray
                         }
                     ),
@@ -254,11 +269,17 @@ fun ResultContent(
             val bannerColor = when(isSafe) {
                 true -> PrimaryColor
                 false -> Color(0xFFFF5252)
-                null -> Color(0xFF9E9E9E) // Gray for analyzing
+                null -> Color(0xFF9E9E9E)
             }
 
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        if (isSafe == null) {
+                            alpha = pulseAlpha
+                        }
+                    },
                 shape = RoundedCornerShape(32.dp),
                 colors = CardDefaults.cardColors(containerColor = bannerColor)
             ) {
@@ -340,7 +361,13 @@ fun ResultContent(
             }
 
             Surface(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        if (isSafe == null) {
+                            alpha = pulseAlpha
+                        }
+                    },
                 color = boxBgColor,
                 shape = RoundedCornerShape(24.dp)
             ) {
@@ -354,18 +381,20 @@ fun ResultContent(
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            "AI Safety\nAnalysis",
+                            "AI Safety Analysis",
                             fontWeight = FontWeight.Bold,
                             color = boxTextColor,
-                            fontSize = 18.sp
+                            fontSize = 24.sp
                         )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = analysisResult.ifEmpty { "Gemma is reading the labels..." },
-                        color = boxTextColor,
-                        fontSize = 14.sp,
-                        lineHeight = 20.sp
+                    MarkdownText(
+                        markdown = analysisResult.ifEmpty { "Gemma is reading the labels..." },
+                        style = TextStyle(
+                            color = boxTextColor,
+                            fontSize = 14.sp,
+                            lineHeight = 20.sp
+                        )
                     )
                 }
             }
@@ -385,6 +414,16 @@ fun ResultContent(
                         .clip(RoundedCornerShape(16.dp)),
                     contentScale = ContentScale.Crop
                 )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .background(Color.LightGray, RoundedCornerShape(16.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Loading photo...", color = Color.DarkGray)
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -394,7 +433,7 @@ fun ResultContent(
                 Box(
                     modifier = Modifier
                         .width(2.dp)
-                        .height(40.dp)
+                        .height(60.dp)
                         .background(Color(0xFF80CBC4))
                 )
                 Spacer(modifier = Modifier.width(16.dp))

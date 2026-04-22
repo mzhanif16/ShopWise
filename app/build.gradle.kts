@@ -76,6 +76,7 @@ dependencies {
     implementation(libs.litertlm)
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    implementation("com.github.jeziellago:compose-markdown:0.7.1")
 
     implementation(libs.composeIcons.simpleIcons)
     implementation(libs.composeIcons.evaIcons)
