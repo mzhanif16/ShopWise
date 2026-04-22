@@ -1,35 +1,91 @@
 package com.shopwise.ui.screen.home
 
+import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.shopwise.core.UserPreferences
+import com.shopwise.ui.screen.onboarding.GemmaViewModel
 import com.shopwise.ui.theme.PrimaryColor
+import compose.icons.EvaIcons
+import compose.icons.evaicons.Fill
+import compose.icons.evaicons.fill.Book
 import kotlinx.coroutines.launch
 
 @Composable
 fun DashboardScreen(navController: NavController) {
     val pagerState = rememberPagerState(pageCount = { 2 })
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val userPreferences = remember { UserPreferences(context) }
+    val gemmaViewModel: GemmaViewModel = viewModel()
+    val dashboardViewModel: DashboardViewModel = viewModel()
+
+    // Init model saat pertama kali dashboard dibuka
+    LaunchedEffect(Unit) {
+        dashboardViewModel.initSelectedModel()
+    }
+
+    // Tampilkan Toast saat model siap
+    LaunchedEffect(dashboardViewModel.isModelReady) {
+        if (dashboardViewModel.isModelReady) {
+            Toast.makeText(context, "Brain Intelligence is Active!", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     Scaffold(
         topBar = {
-            DashboardTopBar()
+            DashboardTopBar(gemmaViewModel, userPreferences, dashboardViewModel)
         },
         bottomBar = {
             DashboardBottomBar(
@@ -43,16 +99,70 @@ fun DashboardScreen(navController: NavController) {
         },
         containerColor = Color.White
     ) { paddingValues ->
-        HorizontalPager(
-            state = pagerState,
+        Box(modifier = Modifier.fillMaxSize()) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                userScrollEnabled = true
+            ) { page ->
+                when (page) {
+                    0 -> HomeScreen(navController)
+                    1 -> ProfileScreen()
+                }
+            }
+
+            // Overlay Keterangan Inisialisasi Model
+//            InitializationOverlay(dashboardViewModel)
+        }
+    }
+}
+
+@Composable
+fun InitializationOverlay(viewModel: DashboardViewModel) {
+    AnimatedVisibility(
+        visible = viewModel.isModelInitializing,
+        enter = fadeIn(),
+        exit = fadeOut()
+    ) {
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            userScrollEnabled = true
-        ) { page ->
-            when (page) {
-                0 -> HomeScreen(navController)
-                1 -> ProfileScreen()
+                .background(Color.Black.copy(alpha = 0.4f))
+                .padding(32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = PrimaryColor,
+                        strokeWidth = 4.dp,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = viewModel.initializationMessage,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color.Black,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Setting up your clinical health advisor...",
+                        fontSize = 12.sp,
+                        color = Color.Gray
+                    )
+                }
             }
         }
     }
@@ -60,15 +170,103 @@ fun DashboardScreen(navController: NavController) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardTopBar() {
+fun DashboardTopBar(
+    gemmaViewModel: GemmaViewModel, 
+    userPreferences: UserPreferences,
+    dashboardViewModel: DashboardViewModel
+) {
+    var showMenu by remember { mutableStateOf(false) }
+    val userData = remember { userPreferences.getUserData() }
+    val selectedModelId = userData["selectedModel"] as? String ?: "4B"
+    
+    val downloadedModels = gemmaViewModel.models.values.filter { it.isDownloaded }
+
     CenterAlignedTopAppBar(
+        navigationIcon = {
+            Box {
+                IconButton(onClick = { showMenu = !showMenu }) {
+                    Icon(
+                        imageVector = EvaIcons.Fill.Book,
+                        contentDescription = "Switch Model",
+                        tint = PrimaryColor
+                    )
+                }
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false },
+                    modifier = Modifier.background(Color.White)
+                ) {
+                    if (downloadedModels.isEmpty()) {
+                        DropdownMenuItem(
+                            text = { Text("No models downloaded", color = Color.Gray, fontSize = 14.sp) },
+                            onClick = { showMenu = false },
+                            enabled = false
+                        )
+                    } else {
+                        Text(
+                            "Select Active Model",
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
+                        downloadedModels.forEach { model ->
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            model.name,
+                                            color = if (model.id == selectedModelId) PrimaryColor else Color.Black,
+                                            fontWeight = if (model.id == selectedModelId) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                        if (model.id == selectedModelId) {
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(6.dp)
+                                                    .clip(CircleShape)
+                                                    .background(PrimaryColor)
+                                            )
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    userPreferences.saveUserData(
+                                        fullName = userData["fullName"] as? String ?: "",
+                                        birthDate = userData["birthDate"] as? String ?: "",
+                                        gender = userData["gender"] as? String ?: "",
+                                        height = userData["height"] as? String ?: "",
+                                        weight = userData["weight"] as? String ?: "",
+                                        allergies = userData["allergies"] as? Set<String> ?: emptySet(),
+                                        selectedModel = model.id
+                                    )
+                                    showMenu = false
+                                    // Re-init model saat ganti pilihan di dropdown
+                                    dashboardViewModel.initSelectedModel()
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        },
         title = {
-            Text(
-                "ShopWise",
-                fontWeight = FontWeight.Bold,
-                color = PrimaryColor,
-                fontSize = 20.sp
-            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    "ShopWise",
+                    fontWeight = FontWeight.Bold,
+                    color = PrimaryColor,
+                    fontSize = 18.sp
+                )
+                if (dashboardViewModel.isModelReady) {
+                    Text(
+                        text = "Brain Active",
+                        fontSize = 10.sp,
+                        color = Color(0xFF4CAF50),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
         },
         actions = {
             IconButton(onClick = { /* TODO: Profile */ }) {
@@ -91,10 +289,10 @@ fun DashboardTopBar() {
 fun DashboardBottomBar(selectedIndex: Int, onItemSelected: (Int) -> Unit) {
     NavigationBar(
         containerColor = Color.White,
-        modifier = Modifier.height(80.dp)
+        modifier = Modifier.height(100.dp)
     ) {
         Row(
-            modifier = Modifier.padding(top = 20.dp)
+            modifier = Modifier.padding(top = 13.dp)
         ) {
             NavigationBarItem(
                 selected = selectedIndex == 0,

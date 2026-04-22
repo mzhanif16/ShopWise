@@ -67,6 +67,14 @@ dependencies {
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.0")
 
 
+    implementation(libs.litertlm)
+
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+
+    implementation(libs.composeIcons.simpleIcons)
+    implementation(libs.composeIcons.evaIcons)
+
+
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

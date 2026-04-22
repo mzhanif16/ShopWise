@@ -27,14 +27,35 @@ import com.shopwise.ui.theme.PrimaryColor
 fun ProfileScreen() {
     val context = LocalContext.current
     val userPreferences = remember { UserPreferences(context) }
-    val userData = userPreferences.getUserData()
+    val userData = remember { userPreferences.getUserData() }
 
     var fullName by remember { mutableStateOf(userData["fullName"] as? String ?: "") }
     var birthDate by remember { mutableStateOf(userData["birthDate"] as? String ?: "") }
     var selectedGender by remember { mutableStateOf(userData["gender"] as? String ?: "Female") }
     var height by remember { mutableStateOf(userData["height"] as? String ?: "") }
     var weight by remember { mutableStateOf(userData["weight"] as? String ?: "") }
-    val allergies = remember { (userData["allergies"] as? Set<String>)?.toMutableStateList() ?: mutableStateListOf() }
+    val selectedModel = remember { userData["selectedModel"] as? String ?: "4B" }
+    
+    val allergies = remember { 
+        val set = userData["allergies"] as? Set<String> ?: emptySet()
+        set.toMutableStateList()
+    }
+
+    var showAddDialog by remember { mutableStateOf(false) }
+    var newAllergyText by remember { mutableStateOf("") }
+
+    // Helper function untuk simpan semua data ke SharedPreferences
+    val saveChanges = {
+        userPreferences.saveUserData(
+            fullName = fullName,
+            birthDate = birthDate,
+            gender = selectedGender,
+            height = height,
+            weight = weight,
+            allergies = allergies.toSet(),
+            selectedModel = selectedModel
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -82,19 +103,28 @@ fun ProfileScreen() {
 
         // Form Fields
         ProfileSectionLabel("FULL NAME")
-        ProfileTextField(value = fullName, onValueChange = { fullName = it })
+        ProfileTextField(value = fullName, onValueChange = { 
+            fullName = it 
+            saveChanges()
+        })
 
         Spacer(modifier = Modifier.height(24.dp))
 
         ProfileSectionLabel("GENDER")
-        ProfileGenderSelector(selectedGender = selectedGender, onGenderSelected = { selectedGender = it })
+        ProfileGenderSelector(selectedGender = selectedGender, onGenderSelected = { 
+            selectedGender = it 
+            saveChanges()
+        })
 
         Spacer(modifier = Modifier.height(24.dp))
 
         ProfileSectionLabel("BIRTH DATE")
         ProfileTextField(
             value = birthDate,
-            onValueChange = { birthDate = it },
+            onValueChange = { 
+                birthDate = it 
+                saveChanges()
+            },
             leadingIcon = Icons.Default.Info,
             trailingIcon = Icons.Default.Info
         )
@@ -104,11 +134,17 @@ fun ProfileScreen() {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Column(modifier = Modifier.weight(1f)) {
                 ProfileSectionLabel("HEIGHT (CM)")
-                ProfileTextField(value = height, onValueChange = { height = it }, trailingIcon = Icons.Default.Info)
+                ProfileTextField(value = height, onValueChange = { 
+                    height = it 
+                    saveChanges()
+                }, trailingIcon = Icons.Default.Info)
             }
             Column(modifier = Modifier.weight(1f)) {
                 ProfileSectionLabel("WEIGHT (KG)")
-                ProfileTextField(value = weight, onValueChange = { weight = it }, trailingIcon = Icons.Default.Info)
+                ProfileTextField(value = weight, onValueChange = { 
+                    weight = it 
+                    saveChanges()
+                }, trailingIcon = Icons.Default.Info)
             }
         }
 
@@ -133,7 +169,7 @@ fun ProfileScreen() {
                 color = PrimaryColor,
                 fontWeight = FontWeight.Bold,
                 fontSize = 12.sp,
-                modifier = Modifier.clickable { /* TODO */ }
+                modifier = Modifier.clickable { showAddDialog = true }
             )
         }
 
@@ -146,7 +182,10 @@ fun ProfileScreen() {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             allergies.forEach { allergy ->
-                AllergyChip(name = allergy, onDelete = { allergies.remove(allergy) })
+                AllergyChip(name = allergy, onDelete = { 
+                    allergies.remove(allergy)
+                    saveChanges()
+                })
             }
         }
 
@@ -179,6 +218,42 @@ fun ProfileScreen() {
 
         Spacer(modifier = Modifier.height(40.dp))
     }
+
+    // Dialog Tambah Alergi
+    if (showAddDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddDialog = false },
+            title = { Text("Add New Allergy") },
+            text = {
+                OutlinedTextField(
+                    value = newAllergyText,
+                    onValueChange = { newAllergyText = it },
+                    placeholder = { Text("e.g. Seafood, Eggs") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (newAllergyText.isNotBlank()) {
+                            allergies.add(newAllergyText.trim())
+                            saveChanges()
+                            newAllergyText = ""
+                            showAddDialog = false
+                        }
+                    }
+                ) {
+                    Text("Add", color = PrimaryColor)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddDialog = false }) {
+                    Text("Cancel", color = Color.Gray)
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -206,25 +281,35 @@ fun ProfileTextField(
         shape = RoundedCornerShape(12.dp),
         color = Color(0xFFF7F7F7)
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (leadingIcon != null) {
-                Icon(leadingIcon, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.width(12.dp))
-            }
-            Text(
-                text = value,
-                modifier = Modifier.weight(1f),
+        // Karena ini Profile, biasanya TextField harusnya bisa diketik
+        // Tapi di desain awal pakai Text, saya ubah ke BasicTextField atau TextField agar interaktif
+        androidx.compose.foundation.text.BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            textStyle = androidx.compose.ui.text.TextStyle(
                 fontSize = 16.sp,
                 color = Color.Black,
                 fontWeight = FontWeight.Medium
-            )
-            if (trailingIcon != null) {
-                Icon(trailingIcon, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(20.dp))
+            ),
+            decorationBox = { innerTextField ->
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (leadingIcon != null) {
+                        Icon(leadingIcon, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
+                    }
+                    Box(modifier = Modifier.weight(1f)) {
+                        if (value.isEmpty()) Text("Enter value", color = Color.LightGray)
+                        innerTextField()
+                    }
+                    if (trailingIcon != null) {
+                        Icon(trailingIcon, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(20.dp))
+                    }
+                }
             }
-        }
+        )
     }
 }
 

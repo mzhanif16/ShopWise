@@ -11,19 +11,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,28 +19,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,48 +32,63 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.shopwise.R
 import com.shopwise.ui.navigation.Routes
 import com.shopwise.ui.theme.PrimaryColor
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 @Composable
-fun AnalysisResultScreen(navController: NavController, imageUri: String) {
-    var isLoading by remember { mutableStateOf(true) }
-    var bitmap by remember { mutableStateOf<Bitmap?>(null) }
-    // Simulasi: Jika URI mengandung kata "safe", maka tampilkan kondisi aman
-    val isSafe = remember { !imageUri.contains("safe", ignoreCase = true) }
+fun AnalysisResultScreen(
+    navController: NavController, 
+    imageUri: String,
+    viewModel: AnalysisResultViewModel = viewModel()
+) {
     val context = LocalContext.current
+    val isAnalyzing by viewModel.isAnalyzing.collectAsStateWithLifecycle()
+    val analysisResult by viewModel.analysisResult.collectAsStateWithLifecycle()
+    
+    var bitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var isSafe by remember { mutableStateOf<Boolean?>(null) }
+    var hasStartedAnalysis by remember { mutableStateOf(false) }
 
+    // Load bitmap and start analysis
     LaunchedEffect(imageUri) {
-        withContext(Dispatchers.IO) {
-            try {
-                val uri = Uri.parse(imageUri)
-                context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                    bitmap = BitmapFactory.decodeStream(inputStream)
+        if (!hasStartedAnalysis) {
+            withContext(Dispatchers.IO) {
+                try {
+                    val uri = Uri.parse(imageUri)
+                    context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                        val loadedBitmap = BitmapFactory.decodeStream(inputStream)
+                        bitmap = loadedBitmap
+                        withContext(Dispatchers.Main) {
+                            viewModel.analyzePicture(loadedBitmap) { finalResult ->
+                                // Cari kata "AMAN" (case sensitive) di akhir generate
+                                // Pastikan tidak ada kata "TIDAK AMAN" yang mendahuluinya untuk akurasi
+                                isSafe = finalResult.contains("AMAN", ignoreCase = false) && 
+                                         !finalResult.contains("TIDAK AMAN", ignoreCase = false)
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
+            hasStartedAnalysis = true
         }
-        delay(3000) 
-        isLoading = false
     }
 
-    if (isLoading) {
+    if (isAnalyzing && analysisResult.isEmpty()) {
         LoadingView()
     } else {
-        ResultContent(navController, bitmap, isSafe)
+        ResultContent(navController, bitmap, isSafe, analysisResult)
     }
 }
 
@@ -147,7 +132,7 @@ fun LoadingView() {
             }
             Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text = "Gemma is analyzing label...",
+                text = "Gemma is thinking...",
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.Gray
             )
@@ -165,7 +150,12 @@ fun LoadingView() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ResultContent(navController: NavController, bitmap: Bitmap?, isSafe: Boolean) {
+fun ResultContent(
+    navController: NavController, 
+    bitmap: Bitmap?, 
+    isSafe: Boolean?,
+    analysisResult: String
+) {
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -183,7 +173,7 @@ fun ResultContent(navController: NavController, bitmap: Bitmap?, isSafe: Boolean
                             modifier = Modifier
                                 .size(36.dp)
                                 .clip(CircleShape)
-                                .background(Color.LightGray),
+                                .background(PrimaryColor),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
@@ -209,15 +199,25 @@ fun ResultContent(navController: NavController, bitmap: Bitmap?, isSafe: Boolean
                             popUpTo(Routes.DASHBOARD) { inclusive = true }
                         }
                     },
+                    enabled = isSafe != null,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isSafe) PrimaryColor else Color(0xFF00897B)
+                        containerColor = when(isSafe) {
+                            true -> PrimaryColor
+                            false -> Color(0xFF00897B) // Di sini tombol ke dashboard biasanya tetap warna brand
+                            null -> Color.Gray
+                        }
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text(if (isSafe) "Back to Dashboard" else "Find Safe Alternatives", fontWeight = FontWeight.Bold)
+                    val btnText = when(isSafe) {
+                        true -> "Back to Dashboard"
+                        false -> "Find Safe Alternatives"
+                        null -> "Analyzing..."
+                    }
+                    Text(btnText, fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedButton(
@@ -240,7 +240,8 @@ fun ResultContent(navController: NavController, bitmap: Bitmap?, isSafe: Boolean
                 }
             }
         },
-        containerColor = Color(0xFFF9F9F9)
+        containerColor = Color(0xFFF9F9F9),
+        modifier = Modifier.navigationBarsPadding()
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -249,13 +250,17 @@ fun ResultContent(navController: NavController, bitmap: Bitmap?, isSafe: Boolean
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
         ) {
-            // Header Banner (Danger or Safe)
+            // Header Banner
+            val bannerColor = when(isSafe) {
+                true -> PrimaryColor
+                false -> Color(0xFFFF5252)
+                null -> Color(0xFF9E9E9E) // Gray for analyzing
+            }
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(32.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isSafe) PrimaryColor else Color(0xFFFF5252)
-                )
+                colors = CardDefaults.cardColors(containerColor = bannerColor)
             ) {
                 Column(
                     modifier = Modifier
@@ -271,24 +276,36 @@ fun ResultContent(navController: NavController, bitmap: Bitmap?, isSafe: Boolean
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = if (isSafe) Icons.Default.CheckCircle else Icons.Default.Warning,
+                            imageVector = when(isSafe) {
+                                true -> Icons.Default.CheckCircle
+                                false -> Icons.Default.Warning
+                                null -> Icons.Default.Search
+                            },
                             contentDescription = null,
-                            tint = if (isSafe) Color.White else Color.Black,
+                            tint = Color.White,
                             modifier = Modifier.size(40.dp)
                         )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        if (isSafe) "SAFE" else "DANGER",
+                        text = when(isSafe) {
+                            true -> "SAFE"
+                            false -> "DANGER"
+                            null -> "ANALYZING"
+                        },
                         fontSize = 32.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = if (isSafe) Color.White else Color(0xFF310000)
+                        color = Color.White
                     )
                     Text(
-                        if (isSafe) "NO ALLERGENS DETECTED" else "SEVERE ALLERGEN DETECTED",
+                        text = when(isSafe) {
+                            true -> "NO ALLERGENS DETECTED"
+                            false -> "SEVERE ALLERGEN DETECTED"
+                            null -> "PLEASE WAIT A MOMENT"
+                        },
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (isSafe) Color.White.copy(alpha = 0.8f) else Color(0xFF310000)
+                        color = Color.White.copy(alpha = 0.8f)
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -298,11 +315,11 @@ fun ResultContent(navController: NavController, bitmap: Bitmap?, isSafe: Boolean
                         shape = RoundedCornerShape(24.dp)
                     ) {
                         Text(
-                            text = if (isSafe) "Product: Fresh Whole Grain\nOatmeal" else "Product: Crunchy Peanut\nButter Granola",
+                            text = "Product Analysis Result",
                             modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
                             textAlign = TextAlign.Center,
                             fontWeight = FontWeight.Bold,
-                            color = if (isSafe) Color.White else Color.Black
+                            color = Color.White
                         )
                     }
                 }
@@ -311,9 +328,20 @@ fun ResultContent(navController: NavController, bitmap: Bitmap?, isSafe: Boolean
             Spacer(modifier = Modifier.height(24.dp))
 
             // AI Safety Analysis Box
+            val boxBgColor = when(isSafe) {
+                true -> Color(0xFFE0F2F1)
+                false -> Color(0xFFFBE9E7)
+                null -> Color(0xFFF5F5F5)
+            }
+            val boxTextColor = when(isSafe) {
+                true -> PrimaryColor
+                false -> Color(0xFFD32F2F)
+                null -> Color.Gray
+            }
+
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = if (isSafe) Color(0xFFE0F2F1) else Color(0xFFE3F2FD),
+                color = boxBgColor,
                 shape = RoundedCornerShape(24.dp)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
@@ -321,92 +349,25 @@ fun ResultContent(navController: NavController, bitmap: Bitmap?, isSafe: Boolean
                         Icon(
                             painterResource(R.drawable.img_gemma),
                             contentDescription = null,
-                            modifier = Modifier.size(100.dp),
-                            tint = if (isSafe) PrimaryColor else Color(0xFF01579B)
+                            modifier = Modifier.size(80.dp),
+                            tint = boxTextColor
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             "AI Safety\nAnalysis",
                             fontWeight = FontWeight.Bold,
-                            color = if (isSafe) PrimaryColor else Color(0xFF01579B),
+                            color = boxTextColor,
                             fontSize = 18.sp
                         )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = if (isSafe) {
-                            buildAnnotatedString {
-                                append("Gemma has analyzed the ingredients and found ")
-                                withStyle(SpanStyle(color = PrimaryColor, fontWeight = FontWeight.Bold)) {
-                                    append("no matches")
-                                }
-                                append(" with your allergy profile. This product is considered safe for consumption based on your clinical safeguards.")
-                            }
-                        } else {
-                            buildAnnotatedString {
-                                append("Gemma 4 has identified high concentrations of ")
-                                withStyle(SpanStyle(color = Color.Red, fontWeight = FontWeight.Bold)) {
-                                    append("Peanut Protein")
-                                }
-                                append(" and trace amounts of ")
-                                withStyle(SpanStyle(color = Color.Red, fontWeight = FontWeight.Bold)) {
-                                    append("Soy Lecithin")
-                                }
-                                append(". This product is strictly prohibited for your clinical profile.")
-                            }
-                        },
-                        color = if (isSafe) PrimaryColor else Color(0xFF0277BD),
+                        text = analysisResult.ifEmpty { "Gemma is reading the labels..." },
+                        color = boxTextColor,
                         fontSize = 14.sp,
                         lineHeight = 20.sp
                     )
                 }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Detected Ingredients Section
-            if (!isSafe) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Detected Ingredients", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Text("2 ALLERGENS", color = Color.Gray, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                DetectedIngredientItem(
-                    name = "Peanut",
-                    detail = "Primary Ingredient • 15% concentration",
-                    risk = "HIGH RISK",
-                    riskColor = Color(0xFFFFEBEE),
-                    riskTextColor = Color.Red,
-                    sideColor = Color.Red,
-                    icon = R.drawable.img_check
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                DetectedIngredientItem(
-                    name = "Soy",
-                    detail = "Processing Agent • Trace amounts",
-                    risk = "MEDIUM RISK",
-                    riskColor = Color(0xFFFFEBEE),
-                    riskTextColor = Color.Red,
-                    sideColor = Color.Red,
-                    icon = R.drawable.img_check
-                )
-            } else {
-                Text("Ingredients Summary", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Spacer(modifier = Modifier.height(16.dp))
-                DetectedIngredientItem(
-                    name = "Whole Grain Oats",
-                    detail = "Safe for your profile",
-                    risk = "SAFE",
-                    riskColor = Color(0xFFE0F2F1),
-                    riskTextColor = PrimaryColor,
-                    sideColor = PrimaryColor,
-                    icon = R.drawable.img_check
-                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -433,14 +394,14 @@ fun ResultContent(navController: NavController, bitmap: Bitmap?, isSafe: Boolean
                 Box(
                     modifier = Modifier
                         .width(2.dp)
-                        .height(60.dp)
+                        .height(40.dp)
                         .background(Color(0xFF80CBC4))
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text("SCAN METADATA", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
                     Text(
-                        text = "Captured at Healthy Market •\n10:30 AM Today",
+                        text = "Real-time analysis active •\nProcessing by Gemma Intelligence",
                         fontSize = 12.sp,
                         color = Color.Gray,
                         lineHeight = 18.sp
@@ -449,70 +410,6 @@ fun ResultContent(navController: NavController, bitmap: Bitmap?, isSafe: Boolean
             }
 
             Spacer(modifier = Modifier.height(140.dp))
-        }
-    }
-}
-
-@Composable
-fun DetectedIngredientItem(
-    name: String,
-    detail: String,
-    risk: String,
-    riskColor: Color,
-    riskTextColor: Color,
-    sideColor: Color,
-    icon: Int
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = Color(0xFFF1F1F1)
-    ) {
-        Row(modifier = Modifier.height(IntrinsicSize.Max)) {
-            Box(
-                modifier = Modifier
-                    .width(4.dp)
-                    .fillMaxHeight()
-                    .background(sideColor)
-            )
-            Row(
-                modifier = Modifier
-                    .padding(12.dp)
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.White),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painterResource(icon),
-                        contentDescription = null,
-                        tint = Color.Unspecified,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(16.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    Text(detail, color = Color.Gray, fontSize = 11.sp)
-                }
-                Surface(
-                    color = riskColor,
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = risk,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = riskTextColor
-                    )
-                }
-            }
         }
     }
 }

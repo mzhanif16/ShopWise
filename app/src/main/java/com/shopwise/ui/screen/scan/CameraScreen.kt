@@ -39,6 +39,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.shopwise.R
+import com.shopwise.core.GemmaUtils
 import com.shopwise.ui.navigation.Routes
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets

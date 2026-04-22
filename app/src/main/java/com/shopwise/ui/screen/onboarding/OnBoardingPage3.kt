@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,11 +20,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,19 +39,35 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shopwise.R
 import com.shopwise.ui.theme.PrimaryColor
+import compose.icons.EvaIcons
+import compose.icons.SimpleIcons
+import compose.icons.evaicons.Fill
+import compose.icons.evaicons.Outline
+import compose.icons.evaicons.fill.CloudUpload
+import compose.icons.evaicons.fill.Download
+import compose.icons.evaicons.outline.Cast
+import compose.icons.evaicons.outline.CloudUpload
 
 @Composable
 fun OnBoardingPage3(
     scrollState: ScrollState,
     selectedModel: String,
-    onModelSelected: (String) -> Unit
+    onModelSelected: (String) -> Unit,
+    gemmaViewModel: GemmaViewModel
 ) {
+    val model4B = gemmaViewModel.models["4B"]
+    val model2B = gemmaViewModel.models["2B"]
+    val activeModel = gemmaViewModel.activeDownloadId?.let { gemmaViewModel.models[it] }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -73,33 +95,51 @@ fun OnBoardingPage3(
         Spacer(modifier = Modifier.height(32.dp))
 
         // Model 4B Card
-        ModelSelectionCard(
-            title = "Gemma 4B (Advanced & Deep)",
-            description = "Unmatched clinical precision. Detects complex allergen cross-contaminations and nutritional nuances.",
-            storage = "2.8GB Storage",
-            icon = Icons.Default.Info,
-            badgeText = "RECOMMENDED",
-            isSelected = selectedModel == "4B",
-            onClick = { onModelSelected("4B") }
-        )
+        model4B?.let { model ->
+            ModelSelectionCard(
+                title = "Gemma 4B (Advanced & Deep)",
+                description = "Unmatched clinical precision. Detects complex allergen cross-contaminations and nutritional nuances.",
+                storage = "3.65GB Storage",
+                icon = painterResource(R.drawable.img_e4b),
+                badgeText = "RECOMMENDED",
+                isSelected = selectedModel == "4B",
+                isDownloaded = model.isDownloaded,
+                isDownloading = model.isDownloading,
+                progress = model.downloadProgress,
+                onDownloadClick = { gemmaViewModel.downloadModel("4B") },
+                onClick = { onModelSelected("4B") }
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // Model 2B Card
-        ModelSelectionCard(
-            title = "Gemma 2B (Lite & Fast)",
-            description = "Lightning quick scans for essential allergen detection. Perfect for newer hardware.",
-            storage = "1.5GB Storage",
-            icon = Icons.Default.Info,
-            badgeText = "EFFICIENT",
-            isSelected = selectedModel == "2B",
-            onClick = { onModelSelected("2B") }
-        )
+        model2B?.let { model ->
+            ModelSelectionCard(
+                title = "Gemma 2B (Lite & Fast)",
+                description = "Lightning quick scans for essential allergen detection. Perfect for newer hardware.",
+                storage = "2.58GB Storage",
+                icon = painterResource(R.drawable.img_e2b),
+                badgeText = "EFFICIENT",
+                isSelected = selectedModel == "2B",
+                isDownloaded = model.isDownloaded,
+                isDownloading = model.isDownloading,
+                progress = model.downloadProgress,
+                onDownloadClick = { gemmaViewModel.downloadModel("2B") },
+                onClick = { onModelSelected("2B") }
+            )
+        }
 
         Spacer(modifier = Modifier.height(32.dp))
 
         // Syncing Box
-        SyncingProgressBox()
+        SyncingProgressBox(
+            isDownloading = gemmaViewModel.activeDownloadId != null,
+            progress = activeModel?.downloadProgress ?: 0f,
+            downloadSpeed = activeModel?.downloadSpeed ?: "",
+            downloadedBytesDisplay = activeModel?.downloadedBytesDisplay ?: "",
+            onCancel = { gemmaViewModel.cancelActiveDownload() }
+        )
 
         Spacer(modifier = Modifier.height(140.dp))
     }
@@ -110,9 +150,13 @@ fun ModelSelectionCard(
     title: String,
     description: String,
     storage: String,
-    icon: ImageVector,
+    icon: Painter,
     badgeText: String,
     isSelected: Boolean,
+    isDownloaded: Boolean,
+    isDownloading: Boolean,
+    progress: Float,
+    onDownloadClick: () -> Unit,
     onClick: () -> Unit
 ) {
     Surface(
@@ -141,7 +185,7 @@ fun ModelSelectionCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = icon,
+                        painter = icon,
                         contentDescription = null,
                         tint = if (isSelected) PrimaryColor else Color.Gray,
                         modifier = Modifier.size(24.dp)
@@ -193,27 +237,94 @@ fun ModelSelectionCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.Info,
-                    contentDescription = null,
-                    tint = PrimaryColor,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = storage,
-                    color = PrimaryColor,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
-                )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = EvaIcons.Fill.CloudUpload,
+                        contentDescription = null,
+                        tint = PrimaryColor,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = storage,
+                        color = PrimaryColor,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                }
+
+                if (!isDownloaded) {
+                    if (isDownloading) {
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = "${(progress * 100).toInt()}%",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = PrimaryColor
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            LinearProgressIndicator(
+                                progress = { progress },
+                                modifier = Modifier
+                                    .width(80.dp)
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(3.dp)),
+                                color = PrimaryColor,
+                                trackColor = Color.LightGray.copy(alpha = 0.3f)
+                            )
+                        }
+                    } else {
+                        Button(
+                            onClick = onDownloadClick,
+                            enabled = isSelected, // Hanya bisa di klik jika card terpilih
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = PrimaryColor,
+                                disabledContainerColor = Color.LightGray.copy(alpha = 0.5f)
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = EvaIcons.Fill.Download,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = if (isSelected) Color.White else Color.Gray
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    "Download",
+                                    fontSize = 12.sp,
+                                    color = if (isSelected) Color.White else Color.Gray
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Ready", color = Color(0xFF4CAF50), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-fun SyncingProgressBox() {
+fun SyncingProgressBox(
+    isDownloading: Boolean,
+    progress: Float,
+    downloadSpeed: String,
+    downloadedBytesDisplay: String,
+    onCancel: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -244,40 +355,69 @@ fun SyncingProgressBox() {
                 
                 // The progress indicator with track color and thickness
                 CircularProgressIndicator(
-                    progress = { 0.65f },
+                    progress = { if (isDownloading) progress else 0f },
                     modifier = Modifier.fillMaxSize(),
                     color = PrimaryColor,
                     trackColor = Color.LightGray.copy(alpha = 0.3f),
                     strokeWidth = 12.dp,
-                    strokeCap = StrokeCap.Butt,
+                    strokeCap = StrokeCap.Round,
                     gapSize = 0.dp
                 )
                 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "65%",
+                        text = if (isDownloading) "${(progress * 100).toInt()}%" else "0%",
                         fontWeight = FontWeight.Bold,
                         fontSize = 28.sp,
                         color = Color.Black
                     )
                     Text(
-                        text = "SYNCING",
+                        text = if (isDownloading) "DOWNLOADING" else "WAITING",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.Gray
                     )
                 }
+                
+                if (isDownloading) {
+                    IconButton(
+                        onClick = onCancel,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .size(24.dp)
+                            .background(Color.White, CircleShape)
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = "Cancel", modifier = Modifier.size(16.dp), tint = Color.Gray)
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text(
-                text = "Gemma is learning your health\nprofile...",
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                color = Color.Black,
-                textAlign = TextAlign.Center
-            )
+            if (isDownloading) {
+                Text(
+                    text = downloadedBytesDisplay,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = Color.Black,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = downloadSpeed,
+                    fontSize = 14.sp,
+                    color = PrimaryColor,
+                    fontWeight = FontWeight.Medium
+                )
+            } else {
+                Text(
+                    text = "Gemma is learning your health\nprofile...",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = Color.Black,
+                    textAlign = TextAlign.Center
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -301,7 +441,7 @@ fun SyncingProgressBox() {
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Optimizing clinical weights",
+                    text = if (isDownloading) "Downloading intelligence weights" else "Optimizing clinical weights",
                     color = Color.Gray,
                     fontSize = 14.sp
                 )

@@ -51,6 +51,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.shopwise.core.UserPreferences
 import com.shopwise.ui.navigation.Routes
@@ -61,6 +62,7 @@ import kotlinx.coroutines.launch
 fun OnBoardingScreen(navController: NavController) {
     val context = LocalContext.current
     val userPreferences = remember { UserPreferences(context) }
+    val gemmaViewModel: GemmaViewModel = viewModel()
     
     val pagerState = rememberPagerState(pageCount = { 3 })
     val scope = rememberCoroutineScope()
@@ -100,6 +102,13 @@ fun OnBoardingScreen(navController: NavController) {
     val showBottomSection by remember {
         derivedStateOf {
             currentScrollState.value >= (currentScrollState.maxValue - 2).coerceAtLeast(0)
+        }
+    }
+
+    // Cek apakah model yang dipilih sudah selesai download
+    val isModelReady by remember(selectedModel, gemmaViewModel.models[selectedModel]?.isDownloaded) {
+        derivedStateOf {
+            gemmaViewModel.models[selectedModel]?.isDownloaded == true
         }
     }
 
@@ -177,7 +186,8 @@ fun OnBoardingScreen(navController: NavController) {
                     2 -> OnBoardingPage3(
                         scrollState = scrollState3,
                         selectedModel = selectedModel,
-                        onModelSelected = { selectedModel = it }
+                        onModelSelected = { selectedModel = it },
+                        gemmaViewModel = gemmaViewModel
                     )
                 }
             }
@@ -196,13 +206,16 @@ fun OnBoardingScreen(navController: NavController) {
                         .padding(bottom = 32.dp, top = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    val isLastPage = pagerState.currentPage == 2
+                    val buttonEnabled = !isLastPage || isModelReady
+
                     Button(
                         onClick = {
                             if (pagerState.currentPage < 2) {
                                 scope.launch {
                                     pagerState.animateScrollToPage(pagerState.currentPage + 1)
                                 }
-                            } else {
+                            } else if (isModelReady) {
                                 userPreferences.saveUserData(
                                     fullName = fullName,
                                     birthDate = birthDate,
@@ -213,9 +226,6 @@ fun OnBoardingScreen(navController: NavController) {
                                     selectedModel = selectedModel
                                 )
                                 userPreferences.setOnboarded(true)
-                                /**
-                                 * Navigate to dashboard
-                                 */
                                 navController.navigate(Routes.DASHBOARD) {
                                     popUpTo(Routes.ONBOARDING) {
                                         inclusive = true
@@ -226,17 +236,21 @@ fun OnBoardingScreen(navController: NavController) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(64.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor),
+                        enabled = buttonEnabled,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PrimaryColor,
+                            disabledContainerColor = Color.LightGray
+                        ),
                         shape = RoundedCornerShape(16.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
                         ) {
-                            val buttonText = if (pagerState.currentPage < 2) "Continue" else "Get Started"
-                            Text(buttonText, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                            val buttonText = if (pagerState.currentPage < 2) "Continue" else if (isModelReady) "Get Started" else "Waiting for Download..."
+                            Text(buttonText, color = if (buttonEnabled) Color.White else Color.Gray, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color.White)
+                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = if (buttonEnabled) Color.White else Color.Gray)
                         }
                     }
 

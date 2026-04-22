@@ -1,7 +1,8 @@
 package com.shopwise.ui.screen.home
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,10 +13,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -25,9 +28,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.shopwise.R
 import com.shopwise.core.UserPreferences
@@ -35,7 +40,7 @@ import com.shopwise.ui.navigation.Routes
 import com.shopwise.ui.theme.PrimaryColor
 
 @Composable
-fun HomeScreen(navController: NavController) {
+fun HomeScreen(navController: NavController, dashboardViewModel: DashboardViewModel = viewModel()) {
     val context = LocalContext.current
     val userPreferences = remember { UserPreferences(context) }
     val userData = userPreferences.getUserData()
@@ -73,10 +78,20 @@ fun HomeScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Quick Photo Button
-        QuickPhotoButton(onPhotoClick = {
-            navController.navigate(Routes.CAMERA)
-        })
+        // Kondisi: Jika model sedang loading, tampilkan animasi initializing
+        // Jika sudah selesai, tampilkan Quick Photo Button
+        AnimatedContent(
+            targetState = dashboardViewModel.isModelInitializing,
+            label = "ModelStatusAnimation"
+        ) { isInitializing ->
+            if (isInitializing) {
+                ModelInitializingAnimation(dashboardViewModel.initializationMessage)
+            } else {
+                QuickPhotoButton(onPhotoClick = {
+                    navController.navigate(Routes.CAMERA)
+                })
+            }
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -133,6 +148,57 @@ fun HomeScreen(navController: NavController) {
         GemmaInsightRow()
 
         Spacer(modifier = Modifier.height(32.dp))
+    }
+}
+
+@Composable
+fun ModelInitializingAnimation(message: String) {
+    val infiniteTransition = rememberInfiniteTransition(label = "InitAnimation")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.9f,
+        targetValue = 1.1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "ScaleAnimation"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .scale(scale)
+                    .clip(CircleShape)
+                    .background(PrimaryColor.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = PrimaryColor,
+                    strokeWidth = 4.dp,
+                    modifier = Modifier.size(60.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = message,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = PrimaryColor
+            )
+            Text(
+                text = "Preparing intelligence brain...",
+                fontSize = 12.sp,
+                color = Color.Gray,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
 
