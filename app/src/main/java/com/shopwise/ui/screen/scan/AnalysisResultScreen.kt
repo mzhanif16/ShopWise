@@ -4,13 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Log
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -47,6 +41,7 @@ import com.shopwise.ui.navigation.Routes
 import com.shopwise.ui.theme.PrimaryColor
 import dev.jeziellago.compose.markdowntext.MarkdownText
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 @Composable
@@ -63,9 +58,7 @@ fun AnalysisResultScreen(
     var isSafe by remember { mutableStateOf<Boolean?>(null) }
     var hasStartedAnalysis by remember { mutableStateOf(false) }
 
-    // Load bitmap and start analysis
     LaunchedEffect(imageUri) {
-        Log.d("AnalysisResult", "Loading URI: $imageUri")
         if (!hasStartedAnalysis) {
             withContext(Dispatchers.IO) {
                 try {
@@ -74,7 +67,6 @@ fun AnalysisResultScreen(
                         val loadedBitmap = BitmapFactory.decodeStream(inputStream)
                         bitmap = loadedBitmap
                         withContext(Dispatchers.Main) {
-                            Log.d("AnalysisResult", "Bitmap loaded successfully, starting analysis")
                             viewModel.analyzePicture(loadedBitmap, imageUri = imageUri) { finalResult ->
                                 isSafe = finalResult.contains("AMAN", ignoreCase = false) && 
                                          !finalResult.contains("TIDAK AMAN", ignoreCase = false)
@@ -82,7 +74,7 @@ fun AnalysisResultScreen(
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e("AnalysisResult", "Failed to load bitmap from URI", e)
+                    Log.e("AnalysisResult", "Failed to load bitmap", e)
                 }
             }
             hasStartedAnalysis = true
@@ -160,12 +152,35 @@ fun ResultContent(
     isSafe: Boolean?,
     analysisResult: String
 ) {
+    val scrollState = rememberScrollState()
+    
+    // Typewriter effect state
+    var displayedText by remember { mutableStateOf("") }
+    
+    // Catch up displayedText to analysisResult smoothly
+    LaunchedEffect(analysisResult) {
+        if (analysisResult.length > displayedText.length) {
+            val newText = analysisResult.substring(displayedText.length)
+            for (char in newText) {
+                displayedText += char
+                delay(if (char == '\n') 40L else 8L) 
+            }
+        }
+    }
+    
+    // Auto-scroll logic: Reverted to simple maxValue scroll
+    LaunchedEffect(displayedText) {
+        if (displayedText.isNotEmpty() && isSafe == null) {
+            scrollState.animateScrollTo(scrollState.maxValue)
+        }
+    }
+
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.6f,
+        initialValue = 0.4f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
+            animation = tween(1000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "pulseAlpha"
@@ -183,7 +198,7 @@ fun ResultContent(
                     )
                 },
                 actions = {
-                    IconButton(onClick = { /* TODO: Profile */ }) {
+                    IconButton(onClick = { /* TODO */ }) {
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
@@ -193,7 +208,7 @@ fun ResultContent(
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.img_brain),
-                                contentDescription = "Profile",
+                                contentDescription = null,
                                 tint = Color.White
                             )
                         }
@@ -262,7 +277,7 @@ fun ResultContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(horizontal = 24.dp)
         ) {
             // Header Banner
@@ -274,12 +289,7 @@ fun ResultContent(
 
             Card(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .graphicsLayer {
-                        if (isSafe == null) {
-                            alpha = pulseAlpha
-                        }
-                    },
+                    .fillMaxWidth(),
                 shape = RoundedCornerShape(32.dp),
                 colors = CardDefaults.cardColors(containerColor = bannerColor)
             ) {
@@ -305,6 +315,9 @@ fun ResultContent(
                             contentDescription = null,
                             tint = Color.White,
                             modifier = Modifier.size(40.dp)
+                                .graphicsLayer {
+                                    if (isSafe == null) alpha = pulseAlpha
+                                }
                         )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
@@ -362,12 +375,7 @@ fun ResultContent(
 
             Surface(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .graphicsLayer {
-                        if (isSafe == null) {
-                            alpha = pulseAlpha
-                        }
-                    },
+                    .fillMaxWidth(),
                 color = boxBgColor,
                 shape = RoundedCornerShape(24.dp)
             ) {
@@ -389,7 +397,7 @@ fun ResultContent(
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     MarkdownText(
-                        markdown = analysisResult.ifEmpty { "Gemma is reading the labels..." },
+                        markdown = displayedText.ifEmpty { "Gemma is reading the labels..." },
                         style = TextStyle(
                             color = boxTextColor,
                             fontSize = 14.sp,
@@ -407,23 +415,13 @@ fun ResultContent(
             if (bitmap != null) {
                 Image(
                     bitmap = bitmap!!.asImageBitmap(),
-                    contentDescription = "Captured Label",
+                    contentDescription = null,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp)
                         .clip(RoundedCornerShape(16.dp)),
                     contentScale = ContentScale.Crop
                 )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .background(Color.LightGray, RoundedCornerShape(16.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Loading photo...", color = Color.DarkGray)
-                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -433,7 +431,7 @@ fun ResultContent(
                 Box(
                     modifier = Modifier
                         .width(2.dp)
-                        .height(60.dp)
+                        .height(40.dp)
                         .background(Color(0xFF80CBC4))
                 )
                 Spacer(modifier = Modifier.width(16.dp))
@@ -448,7 +446,15 @@ fun ResultContent(
                 }
             }
 
-            Spacer(modifier = Modifier.height(140.dp))
+            Spacer(modifier = Modifier.height(40.dp))
         }
+    }
+}
+fun decodeUri(context: android.content.Context, uri: Uri): Bitmap? {
+    return try {
+        val inputStream = context.contentResolver.openInputStream(uri)
+        BitmapFactory.decodeStream(inputStream)
+    } catch (e: Exception) {
+        null
     }
 }

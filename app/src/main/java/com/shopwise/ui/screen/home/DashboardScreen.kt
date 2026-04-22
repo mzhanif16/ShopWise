@@ -70,9 +70,9 @@ fun DashboardScreen(navController: NavController) {
 
     // Tampilkan Toast saat model siap
     LaunchedEffect(dashboardViewModel.isModelReady) {
-        if (dashboardViewModel.isModelReady) {
-            Toast.makeText(context, "Brain Intelligence is Active!", Toast.LENGTH_SHORT).show()
-        }
+//        if (dashboardViewModel.isModelReady) {
+//            Toast.makeText(context, "Brain Intelligence is Active!", Toast.LENGTH_SHORT).show()
+//        }
     }
 
     Scaffold(
@@ -212,17 +212,13 @@ fun DashboardTopBar(
             }
         },
         actions = {
-            IconButton(onClick = { /* TODO: Profile */ }) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color.LightGray),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Person, contentDescription = "Profile", tint = Color.White)
-                }
-            }
+            Text(
+                downloadedModels.find { it.id == selectedModelId }?.name ?: "Model not found",
+                fontWeight = FontWeight.Bold,
+                color = PrimaryColor,
+                fontSize = 18.sp,
+                modifier = Modifier.padding(end = 8.dp)
+            )
         },
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
     )

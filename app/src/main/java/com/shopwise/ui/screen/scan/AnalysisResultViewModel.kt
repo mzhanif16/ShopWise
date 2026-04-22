@@ -44,7 +44,8 @@ class AnalysisResultViewModel(application: Application) : AndroidViewModel(appli
             Kesalahan dalam mengidentifikasi bahan makanan dapat berakibat fatal. Banyak produsen makanan menyembunyikan alergen atau bahan berbahaya di balik nama ilmiah, kode E (E-numbers), atau istilah payung seperti "perisa alami".
             
             Analisis gambar label makanan ini dan berikan laporan apakah aman atau tidak berdasarkan profil alergi tersebut, jelaskan dengan detail. 
-            Berikan nama produk singkat di baris PERTAMA.
+            Berikan nama produk singkat di baris PERTAMA berikan dengan kata Produk: (nama produk, jika tidak ada berikan saja nama yang tepat menurutmu).
+            Setelah nama produk, baru berikan kata Analisis: (hasil analisis jelaskan secara detail terkait resiko, manfaat, efek samping dll).
             di akhir reasoning tambahkan kata KESIMPULAN: AMAN / TIDAK AMAN agar saya dapat valuenya.
         """.trimIndent()
 
@@ -92,18 +93,36 @@ class AnalysisResultViewModel(application: Application) : AndroidViewModel(appli
     private fun saveToHistory(result: String, bitmap: Bitmap) {
         val isSafe = result.contains("AMAN", ignoreCase = false) && !result.contains("TIDAK AMAN", ignoreCase = false)
         
-        // Extract product name: ambil baris pertama atau 5 kata pertama
-        val firstLine = result.split("\n").firstOrNull { it.isNotBlank() } ?: "Unknown Product"
-        val productName = if (firstLine.length > 30) firstLine.take(27) + "..." else firstLine
+        // Logika Ekstraksi Nama Produk: antara "Produk:" dan "Analisis"
+        val startTag = "Produk:"
+        val endTag = "Analisis"
+        
+        val startIndex = result.indexOf(startTag)
+        val endIndex = result.indexOf(endTag)
+
+        var productName = if (startIndex != -1 && endIndex != -1 && endIndex > startIndex + startTag.length) {
+            result.substring(startIndex + startTag.length, endIndex).trim()
+        } else {
+            // Fallback: Ambil baris pertama yang mengandung "Produk:"
+            result.split("\n").firstOrNull { it.contains(startTag) }
+                ?.replace(startTag, "")?.trim() 
+                ?: "Unknown Product"
+        }
+        
+        // Bersihkan karakter markdown jika ada (seperti **)
+        productName = productName.replace("*", "").trim()
+        
+        // Batasi panjang nama produk agar tidak kepanjangan di UI
+        val finalProductName = if (productName.length > 35) productName.take(32) + "..." else productName
 
         viewModelScope.launch {
             val localPath = saveBitmapToFile(bitmap)
             db.scanHistoryDao().insertScan(
                 ScanHistory(
-                    productName = productName,
+                    productName = finalProductName,
                     finalResult = result,
                     isSafe = isSafe,
-                    imageUri = localPath // Simpan path internal, bukan content:// URI
+                    imageUri = localPath
                 )
             )
         }
