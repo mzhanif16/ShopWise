@@ -22,7 +22,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
@@ -32,21 +32,29 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil3.compose.AsyncImage
 import com.shopwise.R
 import com.shopwise.core.UserPreferences
 import com.shopwise.ui.navigation.Routes
 import com.shopwise.ui.theme.PrimaryColor
 
 @Composable
-fun HomeScreen(navController: NavController, dashboardViewModel: DashboardViewModel = viewModel()) {
+fun HomeScreen(
+    navController: NavController, 
+    dashboardViewModel: DashboardViewModel = viewModel(),
+    homeViewModel: HomeViewModel = viewModel()
+) {
     val context = LocalContext.current
     val userPreferences = remember { UserPreferences(context) }
     val userData = userPreferences.getUserData()
     val fullName = (userData["fullName"] as? String) ?: "User"
     val firstName = fullName.split(" ").firstOrNull() ?: "User"
     val allergies = (userData["allergies"] as? Set<*>)?.joinToString(" and ") ?: "None"
+    
+    val recentScans by homeViewModel.recentScans.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
@@ -78,8 +86,7 @@ fun HomeScreen(navController: NavController, dashboardViewModel: DashboardViewMo
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Kondisi: Jika model sedang loading, tampilkan animasi initializing
-        // Jika sudah selesai, tampilkan Quick Photo Button
+        // Quick Photo Section
         AnimatedContent(
             targetState = dashboardViewModel.isModelInitializing,
             label = "ModelStatusAnimation"
@@ -96,7 +103,9 @@ fun HomeScreen(navController: NavController, dashboardViewModel: DashboardViewMo
         Spacer(modifier = Modifier.height(24.dp))
 
         // AI Assistant Button with Gradient
-        AIAssistantButton()
+        AIAssistantButton(onClick = {
+            navController.navigate(Routes.CHAT)
+        })
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -125,22 +134,28 @@ fun HomeScreen(navController: NavController, dashboardViewModel: DashboardViewMo
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Scan Items
-        RecentScanItem(
-            name = "Organic Almond Milk",
-            time = "2 hours ago",
-            status = "SAFE",
-            statusColor = PrimaryColor,
-            icon = Icons.Default.Info
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        RecentScanItem(
-            name = "Protein Granola Bar",
-            time = "Yesterday",
-            status = "ALERT",
-            statusColor = Color(0xFFB3261E),
-            icon = Icons.Default.Info
-        )
+        // Scan Items Dinamis dari Database
+        if (recentScans.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("No recent scans yet", color = Color.Gray, fontSize = 14.sp)
+            }
+        } else {
+            recentScans.forEach { scan ->
+                RecentScanItem(
+                    name = scan.productName,
+                    time = formatTimestamp(scan.timestamp),
+                    status = if (scan.isSafe) "SAFE" else "ALERT",
+                    statusColor = if (scan.isSafe) PrimaryColor else Color(0xFFB3261E),
+                    iconUri = scan.imageUri
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -148,6 +163,20 @@ fun HomeScreen(navController: NavController, dashboardViewModel: DashboardViewMo
         GemmaInsightRow()
 
         Spacer(modifier = Modifier.height(32.dp))
+    }
+}
+
+fun formatTimestamp(timestamp: Long): String {
+    val diff = System.currentTimeMillis() - timestamp
+    val minutes = diff / (1000 * 60)
+    val hours = minutes / 60
+    val days = hours / 24
+    
+    return when {
+        minutes < 1 -> "Just now"
+        minutes < 60 -> "$minutes minutes ago"
+        hours < 24 -> "$hours hours ago"
+        else -> "$days days ago"
     }
 }
 
@@ -302,7 +331,7 @@ fun QuickPhotoButton(onPhotoClick: () -> Unit) {
 }
 
 @Composable
-fun AIAssistantButton() {
+fun AIAssistantButton(onClick: () -> Unit) {
     val aiGradient = Brush.horizontalGradient(
         colors = listOf(
             Color(0xFFBBDEFB), // Very Light Blue
@@ -316,7 +345,7 @@ fun AIAssistantButton() {
             .fillMaxWidth()
             .clip(RoundedCornerShape(32.dp))
             .background(aiGradient)
-            .clickable { /* TODO: AI Assistant */ }
+            .clickable { onClick() }
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -346,7 +375,7 @@ fun RecentScanItem(
     time: String,
     status: String,
     statusColor: Color,
-    icon: ImageVector
+    iconUri: String?
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -357,7 +386,7 @@ fun RecentScanItem(
             modifier = Modifier.height(IntrinsicSize.Max),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left indicator bar as seen in the image
+            // Left indicator bar
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
@@ -378,7 +407,16 @@ fun RecentScanItem(
                         .background(Color.White),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(imageVector = icon, contentDescription = null, tint = Color.LightGray)
+                    if (iconUri != null) {
+                        AsyncImage(
+                            model = iconUri,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(imageVector = Icons.Default.Info, contentDescription = null, tint = Color.LightGray)
+                    }
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {

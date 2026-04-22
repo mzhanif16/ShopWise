@@ -1,50 +1,43 @@
 package com.shopwise.ui.screen.scan
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil3.compose.AsyncImage
 import com.shopwise.R
+import com.shopwise.core.database.ScanHistory
 import com.shopwise.ui.theme.PrimaryColor
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScanHistoryScreen(navController: NavController) {
+fun ScanHistoryScreen(
+    navController: NavController,
+    viewModel: ScanHistoryViewModel = viewModel()
+) {
+    val scans by viewModel.allScans.collectAsStateWithLifecycle()
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -69,62 +62,80 @@ fun ScanHistoryScreen(navController: NavController) {
         },
         containerColor = Color(0xFFF9F9F9)
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp)
-        ) {
-            Spacer(modifier = Modifier.height(16.dp))
+        if (scans.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("No scan history found", color = Color.Gray)
+            }
+        } else {
+            val groupedScans = remember(scans) {
+                scans.groupBy { formatGroupDate(it.timestamp) }
+            }
 
-            SectionHeader("TODAY")
-            HistoryItem(
-                name = "Organic Almond Milk",
-                time = "2 hours ago",
-                status = "SAFE",
-                statusColor = PrimaryColor,
-                icon = R.drawable.img_check
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            HistoryItem(
-                name = "Protein Granola Bar",
-                time = "4 hours ago",
-                status = "ALERT",
-                statusColor = Color(0xFFB3261E),
-                icon = R.drawable.img_check,
-                hasSideIndicator = true
-            )
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                groupedScans.forEach { (dateHeader, dateScans) ->
+                    item {
+                        SectionHeader(dateHeader)
+                    }
+                    items(dateScans) { scan ->
+                        HistoryItem(
+                            name = scan.productName,
+                            time = formatTimeOnly(scan.timestamp),
+                            status = if (scan.isSafe) "SAFE" else "ALERT",
+                            statusColor = if (scan.isSafe) PrimaryColor else Color(0xFFB3261E),
+                            imageUri = scan.imageUri,
+                            hasSideIndicator = !scan.isSafe
+                        )
+                    }
+                    item { Spacer(modifier = Modifier.height(16.dp)) }
+                }
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            SectionHeader("YESTERDAY")
-            HistoryItem(
-                name = "Greek Yogurt",
-                time = "Yesterday, 4:12 PM",
-                status = "SAFE",
-                statusColor = PrimaryColor,
-                icon = R.drawable.img_check
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Gemma AI Insight Box
-            GemmaInsightCard()
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            HistoryItem(
-                name = "Raw Kombucha",
-                time = "Yesterday, 11:30 AM",
-                status = "SAFE",
-                statusColor = PrimaryColor,
-                icon = R.drawable.img_check
-            )
-            
-            Spacer(modifier = Modifier.height(40.dp))
+                item {
+                    GemmaInsightCard()
+                    Spacer(modifier = Modifier.height(40.dp))
+                }
+            }
         }
     }
+}
+
+fun formatGroupDate(timestamp: Long): String {
+    val now = Calendar.getInstance()
+    val time = Calendar.getInstance().apply { timeInMillis = timestamp }
+    
+    return when {
+        isSameDay(now, time) -> "TODAY"
+        isYesterday(now, time) -> "YESTERDAY"
+        else -> SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault()).format(Date(timestamp)).uppercase()
+    }
+}
+
+fun formatTimeOnly(timestamp: Long): String {
+    return SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(timestamp))
+}
+
+fun isSameDay(cal1: Calendar, cal2: Calendar): Boolean {
+    return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
+           cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
+}
+
+fun isYesterday(cal1: Calendar, cal2: Calendar): Boolean {
+    val yesterday = Calendar.getInstance().apply { 
+        timeInMillis = cal1.timeInMillis
+        add(Calendar.DAY_OF_YEAR, -1) 
+    }
+    return yesterday.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
+           yesterday.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
 }
 
 @Composable
@@ -134,7 +145,7 @@ fun SectionHeader(text: String) {
         color = Color.Gray,
         fontWeight = FontWeight.Bold,
         fontSize = 12.sp,
-        modifier = Modifier.padding(bottom = 16.dp)
+        modifier = Modifier.padding(bottom = 8.dp, top = 8.dp)
     )
 }
 
@@ -144,7 +155,7 @@ fun HistoryItem(
     time: String,
     status: String,
     statusColor: Color,
-    icon: Int,
+    imageUri: String?,
     hasSideIndicator: Boolean = false
 ) {
     Surface(
@@ -175,12 +186,21 @@ fun HistoryItem(
                         .background(Color(0xFFF1F1F1)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        painter = painterResource(icon),
-                        contentDescription = null,
-                        tint = Color.Unspecified,
-                        modifier = Modifier.size(60.dp)
-                    )
+                    if (imageUri != null) {
+                        AsyncImage(
+                            model = imageUri,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            painter = painterResource(R.drawable.img_check),
+                            contentDescription = null,
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(60.dp)
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
@@ -235,14 +255,14 @@ fun GemmaInsightCard() {
             }
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "You've scanned 12 items this week. 80% of your choices were Allergen-Free. Your health score is improving.",
+                text = "You're consistently choosing safe products. 85% of your recent scans align with your allergy profile. Great job!",
                 fontSize = 14.sp,
                 color = Color(0xFF0D47A1),
                 lineHeight = 20.sp
             )
             Spacer(modifier = Modifier.height(16.dp))
             LinearProgressIndicator(
-                progress = { 0.8f },
+                progress = { 0.85f },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp)

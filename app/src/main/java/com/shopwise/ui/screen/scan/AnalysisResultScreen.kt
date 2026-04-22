@@ -69,7 +69,7 @@ fun AnalysisResultScreen(
                         val loadedBitmap = BitmapFactory.decodeStream(inputStream)
                         bitmap = loadedBitmap
                         withContext(Dispatchers.Main) {
-                            viewModel.analyzePicture(loadedBitmap) { finalResult ->
+                            viewModel.analyzePicture(loadedBitmap,imageUri = imageUri) { finalResult ->
                                 // Cari kata "AMAN" (case sensitive) di akhir generate
                                 // Pastikan tidak ada kata "TIDAK AMAN" yang mendahuluinya untuk akurasi
                                 isSafe = finalResult.contains("AMAN", ignoreCase = false) && 

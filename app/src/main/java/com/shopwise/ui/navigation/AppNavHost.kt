@@ -15,6 +15,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.shopwise.ui.MainViewModel
+import com.shopwise.ui.screen.chat.ChatScreen
 import com.shopwise.ui.screen.home.DashboardScreen
 import com.shopwise.ui.screen.onboarding.OnBoardingScreen
 import com.shopwise.ui.screen.scan.AnalysisResultScreen
@@ -106,7 +107,7 @@ fun AppNavHost() {
         }
 
         composable(Routes.CHAT) {
-//            ChatScreen()
+            ChatScreen(navController)
         }
     }
 }
