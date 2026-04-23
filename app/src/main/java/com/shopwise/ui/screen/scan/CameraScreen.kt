@@ -7,18 +7,35 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.camera.core.*
+import androidx.camera.core.Camera
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.Preview
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -27,8 +44,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Done
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,7 +77,7 @@ import com.shopwise.ui.theme.PrimaryColor
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 @Composable
 fun CameraScreen(navController: NavController) {
@@ -64,6 +90,21 @@ fun CameraScreen(navController: NavController) {
     ) { isGranted ->
         hasCameraPermission = isGranted
     }
+    val resolutionSelector = remember {
+        ResolutionSelector.Builder()
+            .setResolutionStrategy(
+                ResolutionStrategy.HIGHEST_AVAILABLE_STRATEGY
+            )
+            .build()
+    }
+
+    // Inisialisasi ImageCapture dengan Mode Kualitas Maksimal
+    val imageCapture = remember {
+        ImageCapture.Builder()
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+            .setResolutionSelector(resolutionSelector)
+            .build()
+    }
 
     LaunchedEffect(Unit) {
         permissionLauncher.launch(Manifest.permission.CAMERA)
@@ -74,7 +115,6 @@ fun CameraScreen(navController: NavController) {
     var camera by remember { mutableStateOf<Camera?>(null) }
     
     val previewView = remember { PreviewView(context) }
-    val imageCapture = remember { ImageCapture.Builder().build() }
     
     val selectedUris = remember { mutableStateListOf<Uri>() }
 
@@ -90,9 +130,12 @@ fun CameraScreen(navController: NavController) {
         cameraProviderFuture.addListener({
             try {
                 val cameraProvider = cameraProviderFuture.get()
-                val preview = Preview.Builder().build().also {
-                    it.setSurfaceProvider(previewView.surfaceProvider)
-                }
+                val preview = Preview.Builder()
+                    .setResolutionSelector(resolutionSelector)
+                    .build()
+                    .also {
+                        it.surfaceProvider = previewView.surfaceProvider
+                    }
 
                 val cameraSelector = CameraSelector.Builder()
                     .requireLensFacing(lensFacing)
@@ -120,7 +163,9 @@ fun CameraScreen(navController: NavController) {
     }
 
     if (hasCameraPermission) {
-        Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)) {
             AndroidView(
                 factory = { previewView },
                 modifier = Modifier.fillMaxSize()
@@ -194,7 +239,9 @@ fun CameraScreen(navController: NavController) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 40.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -205,7 +252,13 @@ fun CameraScreen(navController: NavController) {
                             .clip(RoundedCornerShape(12.dp))
                             .background(Color.White.copy(alpha = 0.2f))
                             .border(1.dp, Color.White.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                            .clickable { galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                            .clickable {
+                                galleryLauncher.launch(
+                                    PickVisualMediaRequest(
+                                        ActivityResultContracts.PickVisualMedia.ImageOnly
+                                    )
+                                )
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(painterResource(R.drawable.img_gallery), contentDescription = "Gallery", tint = Color.White)
@@ -219,13 +272,17 @@ fun CameraScreen(navController: NavController) {
                             .background(Color.White.copy(alpha = 0.2f))
                             .padding(4.dp)
                             .border(4.dp, Color.White, CircleShape)
-                            .clickable { 
+                            .clickable {
                                 capturePhoto(context, imageCapture) { uri ->
                                     selectedUris.add(uri)
                                 }
                             }
                     ) {
-                        Box(modifier = Modifier.fillMaxSize().padding(4.dp).clip(CircleShape).background(Color.White))
+                        Box(modifier = Modifier
+                            .fillMaxSize()
+                            .padding(4.dp)
+                            .clip(CircleShape)
+                            .background(Color.White))
                     }
 
                     // Done/Analyze Button or Flip Button
@@ -235,9 +292,13 @@ fun CameraScreen(navController: NavController) {
                                 .size(56.dp)
                                 .clip(CircleShape)
                                 .background(PrimaryColor)
-                                .clickable { 
-                                    val joinedUris = selectedUris.joinToString(",") { it.toString() }
-                                    val encodedUri = URLEncoder.encode(joinedUris, StandardCharsets.UTF_8.toString())
+                                .clickable {
+                                    val joinedUris =
+                                        selectedUris.joinToString(",") { it.toString() }
+                                    val encodedUri = URLEncoder.encode(
+                                        joinedUris,
+                                        StandardCharsets.UTF_8.toString()
+                                    )
                                     navController.navigate("${Routes.ANALYSIS_RESULT}/$encodedUri")
                                 },
                             contentAlignment = Alignment.Center
@@ -250,11 +311,11 @@ fun CameraScreen(navController: NavController) {
                                 .size(56.dp)
                                 .clip(CircleShape)
                                 .background(Color.White.copy(alpha = 0.2f))
-                                .clickable { 
-                                    lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK) 
-                                        CameraSelector.LENS_FACING_FRONT 
-                                    else 
-                                        CameraSelector.LENS_FACING_BACK 
+                                .clickable {
+                                    lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK)
+                                        CameraSelector.LENS_FACING_FRONT
+                                    else
+                                        CameraSelector.LENS_FACING_BACK
                                 },
                             contentAlignment = Alignment.Center
                         ) {
@@ -276,7 +337,9 @@ fun CameraScreen(navController: NavController) {
             }
         }
     } else {
-        Box(modifier = Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("Camera permission is required", color = Color.White)
                 Spacer(modifier = Modifier.height(16.dp))
