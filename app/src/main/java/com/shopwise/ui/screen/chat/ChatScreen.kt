@@ -18,6 +18,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -35,6 +36,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,28 +52,31 @@ import compose.icons.evaicons.fill.Image
 import compose.icons.evaicons.fill.Mic
 import compose.icons.evaicons.fill.PlusCircle
 import compose.icons.evaicons.fill.StopCircle
+import dev.jeziellago.compose.markdowntext.MarkdownText
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ChatScreen(navController: NavController, viewModel: ChatViewModel = viewModel()) {
     val context = LocalContext.current
     var textState by remember { mutableStateOf("") }
-    var selectedBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    val selectedBitmaps = remember { mutableStateListOf<Bitmap>() }
     val listState = rememberLazyListState()
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { selectedBitmap = decodeUri(context, it) }
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris: List<Uri> ->
+        uris.forEach { uri ->
+            decodeUri(context, uri)?.let { selectedBitmaps.add(it) }
+        }
     }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview()
     ) { bitmap: Bitmap? ->
-        bitmap?.let { selectedBitmap = it }
+        bitmap?.let { selectedBitmaps.add(it) }
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -82,7 +87,6 @@ fun ChatScreen(navController: NavController, viewModel: ChatViewModel = viewMode
         }
     }
 
-    // Scroll to bottom when new messages arrive or when AI starts thinking
     LaunchedEffect(viewModel.messages.size, viewModel.isThinking) {
         if (viewModel.messages.isNotEmpty() || viewModel.isThinking) {
             listState.animateScrollToItem(
@@ -96,9 +100,9 @@ fun ChatScreen(navController: NavController, viewModel: ChatViewModel = viewMode
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        "Ask Gemma Expert",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
+                        "ShopWise AI Expert",
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 20.sp,
                         color = Color.Black
                     )
                 },
@@ -112,26 +116,35 @@ fun ChatScreen(navController: NavController, viewModel: ChatViewModel = viewMode
         },
         bottomBar = {
             Column {
-                selectedBitmap?.let { bitmap ->
-                    Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                        Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = "Preview",
-                            modifier = Modifier
-                                .size(100.dp)
-                                .clip(RoundedCornerShape(12.dp)),
-                            contentScale = ContentScale.Crop
-                        )
-                        Surface(
-                            onClick = { selectedBitmap = null },
-                            color = Color.Red,
-                            shape = CircleShape,
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(4.dp)
-                                .size(20.dp)
-                        ) {
-                            Icon(Icons.Default.Close, "Hapus", modifier = Modifier.padding(2.dp), tint = Color.White)
+                if (selectedBitmaps.isNotEmpty()) {
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(end = 16.dp)
+                    ) {
+                        items(selectedBitmaps) { bitmap ->
+                            Box(modifier = Modifier.size(90.dp)) {
+                                Image(
+                                    bitmap = bitmap.asImageBitmap(),
+                                    contentDescription = "Image Preview",
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(RoundedCornerShape(12.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                                IconButton(
+                                    onClick = { selectedBitmaps.remove(bitmap) },
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .offset(x = 8.dp, y = (-8).dp)
+                                        .size(24.dp)
+                                        .background(Color.Red, CircleShape)
+                                ) {
+                                    Icon(Icons.Default.Close, "Remove", modifier = Modifier.size(14.dp), tint = Color.White)
+                                }
+                            }
                         }
                     }
                 }
@@ -139,9 +152,9 @@ fun ChatScreen(navController: NavController, viewModel: ChatViewModel = viewMode
                     textValue = textState,
                     onValueChange = { textState = it },
                     onSend = {
-                        viewModel.sendMessage(textState, context, selectedBitmap)
+                        viewModel.sendMessage(textState, context, selectedBitmaps.toList())
                         textState = ""
-                        selectedBitmap = null
+                        selectedBitmaps.clear()
                     },
                     isSending = viewModel.isSending,
                     isRecording = viewModel.isRecording,
@@ -165,7 +178,7 @@ fun ChatScreen(navController: NavController, viewModel: ChatViewModel = viewMode
                 )
             }
         },
-        containerColor = Color(0xFFF9F9F9),
+        containerColor = Color(0xFFFBFBFB),
         modifier = Modifier.navigationBarsPadding()
     ) { paddingValues ->
         Column(
@@ -173,71 +186,53 @@ fun ChatScreen(navController: NavController, viewModel: ChatViewModel = viewMode
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Header Section
             if (viewModel.messages.isEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = Color(0xFFE3F2FD),
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.Settings,
-                                contentDescription = null,
-                                tint = Color(0xFF1E88E5),
-                                modifier = Modifier.size(24.dp)
-                            )
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFFE3F2FD),
+                            modifier = Modifier.size(64.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.Face,
+                                    contentDescription = null,
+                                    tint = PrimaryColor,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
                         }
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Text(
+                            "Ready to Analyze?",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 22.sp,
+                            color = Color.Black
+                        )
+                        Text(
+                            "Send images of food labels for instant analysis",
+                            color = Color.Gray,
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        "Ask Gemma Expert",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 24.sp,
-                        color = Color.Black
-                    )
-                    Text(
-                        "Professional clinical insights powered by AI",
-                        color = Color.Gray,
-                        fontSize = 14.sp
-                    )
                 }
             }
 
-            // Messages List
             LazyColumn(
                 state = listState,
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(bottom = 24.dp)
+                    .padding(horizontal = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp)
             ) {
                 items(viewModel.messages) { message ->
                     ChatBubble(message)
                 }
                 if (viewModel.isThinking) {
                     item { ThinkingAnimation() }
-                }
-            }
-
-            // Quick Actions
-            if (viewModel.messages.isEmpty()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    QuickActionChip("Is this keto-friendly?")
-                    QuickActionChip("Why is soy risky?")
-                    QuickActionChip("Check safety")
                 }
             }
         }
@@ -251,28 +246,28 @@ fun ThinkingAnimation() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.Start
     ) {
         Column {
             Text(
-                "GEMMA",
+                "SYSTEM",
                 fontWeight = FontWeight.Bold,
                 fontSize = 10.sp,
-                color = Color(0xFF1E88E5)
+                color = Color.Gray
             )
             Spacer(modifier = Modifier.height(4.dp))
             Surface(
                 shape = RoundedCornerShape(topStart = 4.dp, topEnd = 20.dp, bottomStart = 20.dp, bottomEnd = 20.dp),
-                color = Color(0xFFBBDEFB).copy(alpha = 0.8f)
+                color = Color(0xFFEEEEEE)
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "Gemma is thinking",
-                        color = Color(0xFF0D47A1),
+                        "Analyzing content...",
+                        color = Color.DarkGray,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -291,7 +286,7 @@ fun ThinkingAnimation() {
                             modifier = Modifier
                                 .size(4.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFF0D47A1).copy(alpha = dotAlpha))
+                                .background(Color.DarkGray.copy(alpha = dotAlpha))
                         )
                         if (index < 2) Spacer(modifier = Modifier.width(3.dp))
                     }
@@ -301,36 +296,38 @@ fun ThinkingAnimation() {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ChatBubble(message: ChatMessage) {
     val alignment = if (message.isUser) Alignment.End else Alignment.Start
-    val bgColor = if (message.isUser) Color(0xFFF1F1F1) else Color(0xFFBBDEFB).copy(alpha = 0.8f)
-    val textColor = if (message.isUser) Color.Black else Color(0xFF0D47A1)
+    val bgColor = if (message.isUser) PrimaryColor else Color.White
+    val textColor = if (message.isUser) Color.White else Color.Black
+    val elevation = if (message.isUser) 2.dp else 1.dp
     
     val currentTime = remember {
-        SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date())
+        SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
     }
 
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalAlignment = alignment) {
+    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = alignment) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (!message.isUser) {
                 Text(
-                    "GEMMA",
+                    "ASSISTANT",
                     fontWeight = FontWeight.Bold,
                     fontSize = 10.sp,
-                    color = Color(0xFF1E88E5)
+                    color = PrimaryColor
                 )
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(6.dp))
             }
             Text(
                 text = currentTime,
-                fontSize = 10.sp,
-                color = Color.Gray
+                fontSize = 9.sp,
+                color = Color.LightGray
             )
             if (message.isUser) {
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    "YOU",
+                    "ME",
                     fontWeight = FontWeight.Bold,
                     fontSize = 10.sp,
                     color = Color.Gray
@@ -340,37 +337,51 @@ fun ChatBubble(message: ChatMessage) {
         Spacer(modifier = Modifier.height(4.dp))
         Surface(
             shape = RoundedCornerShape(
-                topStart = if (message.isUser) 20.dp else 4.dp,
-                topEnd = if (message.isUser) 4.dp else 20.dp,
-                bottomStart = 20.dp,
-                bottomEnd = 20.dp
+                topStart = if (message.isUser) 16.dp else 2.dp,
+                topEnd = if (message.isUser) 2.dp else 16.dp,
+                bottomStart = 16.dp,
+                bottomEnd = 16.dp
             ),
-            color = bgColor
+            color = bgColor,
+            shadowElevation = elevation
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
-                message.image?.let { bitmap ->
-                    Image(
-                        bitmap = bitmap.asImageBitmap(),
-                        contentDescription = "Chat Image",
-                        modifier = Modifier
-                            .sizeIn(maxWidth = 200.dp, maxHeight = 300.dp)
-                            .clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Fit
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+                message.images?.let { bitmaps ->
+                    if (bitmaps.isNotEmpty()) {
+                        FlowRow(
+                            modifier = Modifier.padding(bottom = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                            maxItemsInEachRow = 2
+                        ) {
+                            bitmaps.forEach { bitmap ->
+                                Image(
+                                    bitmap = bitmap.asImageBitmap(),
+                                    contentDescription = "Product Image",
+                                    modifier = Modifier
+                                        .sizeIn(maxWidth = 140.dp, maxHeight = 140.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color.Gray.copy(alpha = 0.1f)),
+                                    contentScale = ContentScale.Fit
+                                )
+                            }
+                        }
+                    }
                 }
                 if (message.isAudio) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(EvaIcons.Fill.Mic, contentDescription = null, tint = textColor, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = "Pesan Suara", fontSize = 14.sp, color = textColor)
+                        Icon(EvaIcons.Fill.Mic, contentDescription = null, tint = textColor, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(text = "Voice clipping", fontSize = 14.sp, color = textColor)
                     }
                 } else if (message.text.isNotEmpty()) {
-                    Text(
-                        text = message.text,
-                        color = textColor,
-                        fontSize = 15.sp,
-                        lineHeight = 22.sp
+                    MarkdownText(
+                        markdown = message.text,
+                        style = TextStyle(
+                            color = textColor,
+                            fontSize = 15.sp,
+                            lineHeight = 22.sp
+                        )
                     )
                 }
             }
@@ -381,16 +392,17 @@ fun ChatBubble(message: ChatMessage) {
 @Composable
 fun QuickActionChip(text: String) {
     Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = Color(0xFFF1F1F1),
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEEEEEE)),
         modifier = Modifier.clickable { /* TODO */ }
     ) {
         Text(
             text = text,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
             fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black
+            fontWeight = FontWeight.Medium,
+            color = Color.DarkGray
         )
     }
 }
@@ -401,21 +413,21 @@ fun VoiceRecordingAnimation() {
     Row(
         modifier = Modifier.height(24.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(2.dp)
+        horizontalArrangement = Arrangement.spacedBy(3.dp)
     ) {
-        repeat(15) { index ->
+        repeat(12) { index ->
             val heightScale by infiniteTransition.animateFloat(
-                initialValue = 0.2f,
+                initialValue = 0.3f,
                 targetValue = 1f,
                 animationSpec = infiniteRepeatable(
-                    animation = tween(durationMillis = 400 + (index * 50), easing = LinearEasing),
+                    animation = tween(durationMillis = 350 + (index * 40), easing = LinearEasing),
                     repeatMode = RepeatMode.Reverse
                 ),
                 label = "barHeight"
             )
             Box(
                 modifier = Modifier
-                    .width(2.dp)
+                    .width(3.dp)
                     .fillMaxHeight(heightScale)
                     .background(PrimaryColor, CircleShape)
             )
@@ -440,13 +452,13 @@ fun ChatBottomBar(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
-        shape = RoundedCornerShape(32.dp),
+        shape = RoundedCornerShape(24.dp),
         color = Color.White,
-        shadowElevation = 4.dp
+        shadowElevation = 8.dp
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 8.dp, vertical = 8.dp),
+                .padding(horizontal = 8.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (!isRecording) {
@@ -454,27 +466,31 @@ fun ChatBottomBar(
                     IconButton(onClick = { showMenu = !showMenu }) {
                         Icon(
                             imageVector = EvaIcons.Fill.PlusCircle,
-                            contentDescription = null,
+                            contentDescription = "Add content",
                             tint = PrimaryColor,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(26.dp)
                         )
                     }
-                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                        modifier = Modifier.background(Color.White)
+                    ) {
                         DropdownMenuItem(
-                            text = { Text("Galeri") },
+                            text = { Text("Gallery") },
                             onClick = { 
                                 showMenu = false
                                 onPickImage() 
                             },
-                            leadingIcon = { Icon(EvaIcons.Fill.Image, contentDescription = null) }
+                            leadingIcon = { Icon(EvaIcons.Fill.Image, contentDescription = null, tint = PrimaryColor) }
                         )
                         DropdownMenuItem(
-                            text = { Text("Kamera") },
+                            text = { Text("Take Photo") },
                             onClick = { 
                                 showMenu = false
                                 onTakeFoto() 
                             },
-                            leadingIcon = { Icon(EvaIcons.Fill.Camera, contentDescription = null) }
+                            leadingIcon = { Icon(EvaIcons.Fill.Camera, contentDescription = null, tint = PrimaryColor) }
                         )
                     }
                 }
@@ -490,14 +506,14 @@ fun ChatBottomBar(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         VoiceRecordingAnimation()
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text("Recording...", color = Color.Gray, fontSize = 14.sp)
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text("Listening...", color = PrimaryColor, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     }
                 } else {
                     TextField(
                         value = textValue,
                         onValueChange = onValueChange,
-                        placeholder = { Text("Ask Gemma anything...", color = Color.Gray) },
+                        placeholder = { Text("Type a message or describe food...", color = Color.LightGray) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
@@ -513,7 +529,7 @@ fun ChatBottomBar(
             IconButton(onClick = onMicClick) {
                 Icon(
                     imageVector = if (isRecording) EvaIcons.Fill.StopCircle else EvaIcons.Fill.Mic,
-                    contentDescription = null,
+                    contentDescription = "Voice input",
                     tint = if (isRecording) Color.Red else PrimaryColor,
                     modifier = Modifier.size(24.dp)
                 )
@@ -522,17 +538,22 @@ fun ChatBottomBar(
             if (!isRecording) {
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
+                        .size(44.dp)
                         .clip(CircleShape)
-                        .background(if (isSending) Color.Gray else PrimaryColor)
-                        .clickable(enabled = !isSending) { onSend() },
+                        .background(if (isSending || (textValue.isBlank() && !isSending)) Color.LightGray else PrimaryColor)
+                        .clickable(enabled = !isSending && textValue.isNotBlank()) { onSend() },
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.Send,
-                        contentDescription = "Send",
-                        tint = Color.White
-                    )
+                    if (isSending) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                    } else {
+                        Icon(
+                            imageVector = Icons.Filled.Send,
+                            contentDescription = "Send",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
         }

@@ -48,7 +48,7 @@ class GemmaManager() {
         conversation = engine?.createConversation()
     }
 
-    fun generateResponse(prompt: String, bitmap: Bitmap? = null, audioBytes: ByteArray? = null) {
+    fun generateResponse(prompt: String, bitmaps: List<Bitmap>? = null, audioBytes: ByteArray? = null) {
         stop()
         isProcessing = true
 
@@ -62,8 +62,8 @@ class GemmaManager() {
                 }
 
                 // Tambahkan Gambar jika ada
-                bitmap?.let {
-                    contents.add(Content.ImageBytes(it.toPngByteArray()))
+                bitmaps?.forEach { bitmap ->
+                    contents.add(Content.ImageBytes(bitmap.toPngByteArray()))
                 }
 
                 // Tambahkan Teks (Prompt)

@@ -31,7 +31,7 @@ class AnalysisResultViewModel(application: Application) : AndroidViewModel(appli
     private val _isAnalyzing = MutableStateFlow(true)
     val isAnalyzing: StateFlow<Boolean> = _isAnalyzing.asStateFlow()
 
-    fun analyzePicture(bitmap: Bitmap? = null, imageUri: String? = null, onComplete: (String) -> Unit = {}) {
+    fun analyzePicture(bitmap: List<Bitmap>? = null, imageUri: String? = null, onComplete: (String) -> Unit = {}) {
         if (gemmaManager == null || bitmap == null) return
 
         val userData = userPreferences.getUserData()
@@ -90,7 +90,7 @@ class AnalysisResultViewModel(application: Application) : AndroidViewModel(appli
         }
     }
 
-    private fun saveToHistory(result: String, bitmap: Bitmap) {
+    private fun saveToHistory(result: String, bitmap: List<Bitmap>?) {
         val isSafe = result.contains("AMAN", ignoreCase = false) && !result.contains("TIDAK AMAN", ignoreCase = false)
         
         // Logika Ekstraksi Nama Produk: antara "Produk:" dan "Analisis"
@@ -116,7 +116,7 @@ class AnalysisResultViewModel(application: Application) : AndroidViewModel(appli
         val finalProductName = if (productName.length > 35) productName.take(32) + "..." else productName
 
         viewModelScope.launch {
-            val localPath = saveBitmapToFile(bitmap)
+            val localPath = bitmap?.first()?.let { saveBitmapToFile(it) }
             db.scanHistoryDao().insertScan(
                 ScanHistory(
                     productName = finalProductName,

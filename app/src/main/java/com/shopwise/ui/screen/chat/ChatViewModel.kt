@@ -27,7 +27,7 @@ import java.io.ByteArrayOutputStream
 data class ChatMessage(
     val text: String,
     val isUser: Boolean,
-    val image: Bitmap? = null,
+    val images: List<Bitmap>? = null,
     val isAudio: Boolean = false
 )
 
@@ -82,8 +82,8 @@ class ChatViewModel : ViewModel() {
         }
     }
 
-    fun sendMessage(prompt: String, context: Context, bitmap: Bitmap? = null, audioBytes: ByteArray? = null) {
-        if ((prompt.isBlank() && bitmap == null) || isSending || gemmaManager == null) return
+    fun sendMessage(prompt: String, context: Context, bitmaps: List<Bitmap>? = null, audioBytes: ByteArray? = null) {
+        if ((prompt.isBlank() && bitmaps.isNullOrEmpty()) || isSending || gemmaManager == null) return
 
         val userPreferences = UserPreferences(context)
         val userData = userPreferences.getUserData()
@@ -97,12 +97,12 @@ class ChatViewModel : ViewModel() {
 
         val finalPrompt = if (prompt.isNotBlank()) "$systemPrompt\n\nUser: $prompt" else systemPrompt
 
-        messages.add(ChatMessage(prompt, true, image = bitmap))
+        messages.add(ChatMessage(prompt, true, images = bitmaps))
         isSending = true
         isThinking = true
         fullResponse = ""
         
-        gemmaManager.generateResponse(finalPrompt, bitmap = bitmap, audioBytes = audioBytes)
+        gemmaManager.generateResponse(finalPrompt, bitmaps = bitmaps, audioBytes = audioBytes)
     }
 
 
@@ -155,11 +155,11 @@ class ChatViewModel : ViewModel() {
     }
     
     private fun sendAudioMessage(audioData: ByteArray) {
-        messages.add(ChatMessage("Pesan Suara", true, isAudio = true))
+        messages.add(ChatMessage("Voice Message", true, isAudio = true))
         isSending = true
         isThinking = true
         fullResponse = ""
-        gemmaManager?.generateResponse("Bantu transkripsi atau jawab suara ini", null, audioData)
+        gemmaManager?.generateResponse("Help me transcribe or respond to this audio", null, audioData)
     }
     
     private fun addWavHeader(pcmData: ByteArray, sampleRate: Int): ByteArray {

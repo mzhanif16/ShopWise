@@ -67,7 +67,7 @@ fun AnalysisResultScreen(
                         val loadedBitmap = BitmapFactory.decodeStream(inputStream)
                         bitmap = loadedBitmap
                         withContext(Dispatchers.Main) {
-                            viewModel.analyzePicture(loadedBitmap, imageUri = imageUri) { finalResult ->
+                            viewModel.analyzePicture(listOf(loadedBitmap), imageUri = imageUri) { finalResult ->
                                 isSafe = finalResult.contains("AMAN", ignoreCase = false) && 
                                          !finalResult.contains("TIDAK AMAN", ignoreCase = false)
                             }
