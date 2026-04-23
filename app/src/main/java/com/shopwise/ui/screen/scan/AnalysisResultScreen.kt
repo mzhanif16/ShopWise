@@ -43,6 +43,8 @@ import dev.jeziellago.compose.markdowntext.MarkdownText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 
 @Composable
 fun AnalysisResultScreen(
@@ -54,7 +56,7 @@ fun AnalysisResultScreen(
     val isAnalyzing by viewModel.isAnalyzing.collectAsStateWithLifecycle()
     val analysisResult by viewModel.analysisResult.collectAsStateWithLifecycle()
     
-    var bitmap by remember { mutableStateOf<Bitmap?>(null) }
+    val bitmaps = remember { mutableStateListOf<Bitmap>() }
     var isSafe by remember { mutableStateOf<Boolean?>(null) }
     var hasStartedAnalysis by remember { mutableStateOf(false) }
 
@@ -62,19 +64,34 @@ fun AnalysisResultScreen(
         if (!hasStartedAnalysis) {
             withContext(Dispatchers.IO) {
                 try {
-                    val uri = Uri.parse(imageUri)
-                    context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                        val loadedBitmap = BitmapFactory.decodeStream(inputStream)
-                        bitmap = loadedBitmap
+                    val uriStrings = imageUri.split(",")
+                    val loadedBitmaps = mutableListOf<Bitmap>()
+                    
+                    uriStrings.forEach { uriStr ->
+                        val decodedUri = try {
+                            URLDecoder.decode(uriStr.trim(), StandardCharsets.UTF_8.toString())
+                        } catch (e: Exception) {
+                            uriStr.trim()
+                        }
+                        val uri = Uri.parse(decodedUri)
+                        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                            BitmapFactory.decodeStream(inputStream)?.let { 
+                                loadedBitmaps.add(it)
+                            }
+                        }
+                    }
+                    
+                    if (loadedBitmaps.isNotEmpty()) {
                         withContext(Dispatchers.Main) {
-                            viewModel.analyzePicture(listOf(loadedBitmap), imageUri = imageUri) { finalResult ->
+                            bitmaps.addAll(loadedBitmaps)
+                            viewModel.analyzePicture(loadedBitmaps, imageUri = imageUri) { finalResult ->
                                 isSafe = finalResult.contains("AMAN", ignoreCase = false) && 
                                          !finalResult.contains("TIDAK AMAN", ignoreCase = false)
                             }
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e("AnalysisResult", "Failed to load bitmap", e)
+                    Log.e("AnalysisResult", "Failed to load bitmaps", e)
                 }
             }
             hasStartedAnalysis = true
@@ -84,7 +101,7 @@ fun AnalysisResultScreen(
     if (isAnalyzing && analysisResult.isEmpty()) {
         LoadingView()
     } else {
-        ResultContent(navController, bitmap, isSafe, analysisResult)
+        ResultContent(navController, bitmaps, isSafe, analysisResult)
     }
 }
 
@@ -148,7 +165,7 @@ fun LoadingView() {
 @Composable
 fun ResultContent(
     navController: NavController, 
-    bitmap: Bitmap?, 
+    bitmaps: List<Bitmap>, 
     isSafe: Boolean?,
     analysisResult: String
 ) {
@@ -197,78 +214,8 @@ fun ResultContent(
                         fontSize = 20.sp
                     )
                 },
-                actions = {
-                    IconButton(onClick = { /* TODO */ }) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(PrimaryColor),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.img_brain),
-                                contentDescription = null,
-                                tint = Color.White
-                            )
-                        }
-                    }
-                },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
             )
-        },
-        bottomBar = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp)
-            ) {
-                Button(
-                    onClick = {
-                        navController.navigate(Routes.DASHBOARD) {
-                            popUpTo(Routes.DASHBOARD) { inclusive = true }
-                        }
-                    },
-                    enabled = isSafe != null,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = when(isSafe) {
-                            true -> PrimaryColor
-                            false -> Color(0xFF00897B)
-                            null -> Color.Gray
-                        }
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    val btnText = when(isSafe) {
-                        true -> "Back to Dashboard"
-                        false -> "Find Safe Alternatives"
-                        null -> "Analyzing..."
-                    }
-                    Text(btnText, fontWeight = FontWeight.Bold)
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                OutlinedButton(
-                    onClick = { /* TODO */ },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0E0E0))
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.Info,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Ask Gemma for Details", color = Color(0xFF0277BD))
-                    }
-                }
-            }
         },
         containerColor = Color(0xFFF9F9F9),
         modifier = Modifier.navigationBarsPadding()
@@ -409,16 +356,17 @@ fun ResultContent(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Photo Preview
-            Text("Captured Photo", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
+            // Photo Preview(s)
+            Text("Captured Photos", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
             Spacer(modifier = Modifier.height(8.dp))
-            if (bitmap != null) {
+            bitmaps.forEach { bmp ->
                 Image(
-                    bitmap = bitmap!!.asImageBitmap(),
+                    bitmap = bmp.asImageBitmap(),
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp)
+                        .padding(vertical = 4.dp)
                         .clip(RoundedCornerShape(16.dp)),
                     contentScale = ContentScale.Crop
                 )
@@ -446,15 +394,60 @@ fun ResultContent(
                 }
             }
 
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+                Button(
+                    onClick = {
+                        navController.navigate(Routes.DASHBOARD) {
+                            popUpTo(Routes.DASHBOARD) { inclusive = true }
+                        }
+                    },
+                    enabled = isSafe != null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = when(isSafe) {
+                            true -> PrimaryColor
+                            false -> Color(0xFF00897B)
+                            null -> Color.Gray
+                        }
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    val btnText = when(isSafe) {
+                        true -> "Back to Dashboard"
+                        false -> "Find Safe Alternatives"
+                        null -> "Analyzing..."
+                    }
+                    Text(btnText, fontWeight = FontWeight.Bold)
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = { /* TODO */ },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0E0E0))
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Ask Gemma for Details", color = Color(0xFF0277BD))
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(40.dp))
         }
-    }
-}
-fun decodeUri(context: android.content.Context, uri: Uri): Bitmap? {
-    return try {
-        val inputStream = context.contentResolver.openInputStream(uri)
-        BitmapFactory.decodeStream(inputStream)
-    } catch (e: Exception) {
-        null
     }
 }

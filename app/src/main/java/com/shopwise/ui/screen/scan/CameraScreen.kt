@@ -14,20 +14,26 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
@@ -38,9 +44,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
+import coil3.compose.rememberAsyncImagePainter
 import com.shopwise.R
-import com.shopwise.core.GemmaUtils
 import com.shopwise.ui.navigation.Routes
+import com.shopwise.ui.theme.PrimaryColor
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
@@ -68,6 +75,8 @@ fun CameraScreen(navController: NavController) {
     
     val previewView = remember { PreviewView(context) }
     val imageCapture = remember { ImageCapture.Builder().build() }
+    
+    val selectedUris = remember { mutableStateListOf<Uri>() }
 
     LaunchedEffect(isFlashOn, camera) {
         camera?.cameraControl?.enableTorch(isFlashOn)
@@ -103,11 +112,10 @@ fun CameraScreen(navController: NavController) {
     }
 
     val galleryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        if (uri != null) {
-            val encodedUri = URLEncoder.encode(uri.toString(), StandardCharsets.UTF_8.toString())
-            navController.navigate("${Routes.ANALYSIS_RESULT}/$encodedUri")
+        contract = ActivityResultContracts.PickMultipleVisualMedia()
+    ) { uris ->
+        if (uris.isNotEmpty()) {
+            selectedUris.addAll(uris)
         }
     }
 
@@ -118,6 +126,7 @@ fun CameraScreen(navController: NavController) {
                 modifier = Modifier.fillMaxSize()
             )
 
+            // Top Bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -139,6 +148,44 @@ fun CameraScreen(navController: NavController) {
                 }
             }
 
+            // Image Preview List
+            if (selectedUris.isNotEmpty()) {
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter)
+                        .padding(top = 80.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(selectedUris) { uri ->
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .border(1.dp, Color.White, RoundedCornerShape(8.dp))
+                        ) {
+                            Image(
+                                painter = rememberAsyncImagePainter(uri),
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                            IconButton(
+                                onClick = { selectedUris.remove(uri) },
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .align(Alignment.TopEnd)
+                                    .background(Color.Red.copy(alpha = 0.7f), CircleShape)
+                            ) {
+                                Icon(Icons.Default.Close, contentDescription = "Remove", tint = Color.White, modifier = Modifier.size(12.dp))
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Bottom Controls
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -151,6 +198,7 @@ fun CameraScreen(navController: NavController) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Gallery Button
                     Box(
                         modifier = Modifier
                             .size(56.dp)
@@ -163,6 +211,7 @@ fun CameraScreen(navController: NavController) {
                         Icon(painterResource(R.drawable.img_gallery), contentDescription = "Gallery", tint = Color.White)
                     }
 
+                    // Shutter Button
                     Box(
                         modifier = Modifier
                             .size(80.dp)
@@ -170,33 +219,58 @@ fun CameraScreen(navController: NavController) {
                             .background(Color.White.copy(alpha = 0.2f))
                             .padding(4.dp)
                             .border(4.dp, Color.White, CircleShape)
-                            .clickable { capturePhoto(context, imageCapture) { uri ->
-                                val encodedUri = URLEncoder.encode(uri.toString(), StandardCharsets.UTF_8.toString())
-                                navController.navigate("${Routes.ANALYSIS_RESULT}/$encodedUri")
-                            } }
+                            .clickable { 
+                                capturePhoto(context, imageCapture) { uri ->
+                                    selectedUris.add(uri)
+                                }
+                            }
                     ) {
                         Box(modifier = Modifier.fillMaxSize().padding(4.dp).clip(CircleShape).background(Color.White))
                     }
 
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.2f))
-                            .clickable { 
-                                lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK) 
-                                    CameraSelector.LENS_FACING_FRONT 
-                                else 
-                                    CameraSelector.LENS_FACING_BACK 
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(painter = painterResource(id = R.drawable.img_flip), contentDescription = "Flip", tint = Color.White)
+                    // Done/Analyze Button or Flip Button
+                    if (selectedUris.isNotEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(PrimaryColor)
+                                .clickable { 
+                                    val joinedUris = selectedUris.joinToString(",") { it.toString() }
+                                    val encodedUri = URLEncoder.encode(joinedUris, StandardCharsets.UTF_8.toString())
+                                    navController.navigate("${Routes.ANALYSIS_RESULT}/$encodedUri")
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Done, contentDescription = "Done", tint = Color.White)
+                        }
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.2f))
+                                .clickable { 
+                                    lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK) 
+                                        CameraSelector.LENS_FACING_FRONT 
+                                    else 
+                                        CameraSelector.LENS_FACING_BACK 
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(painter = painterResource(id = R.drawable.img_flip), contentDescription = "Flip", tint = Color.White)
+                        }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
-                Text("CAPTURE LABEL FOR ANALYSIS", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                Text(
+                    text = if (selectedUris.isEmpty()) "CAPTURE LABEL FOR ANALYSIS" else "${selectedUris.size} IMAGES READY", 
+                    color = Color.White, 
+                    fontSize = 14.sp, 
+                    fontWeight = FontWeight.Bold, 
+                    letterSpacing = 1.sp
+                )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text("Place ingredients clearly in view", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp, textAlign = TextAlign.Center)
             }
