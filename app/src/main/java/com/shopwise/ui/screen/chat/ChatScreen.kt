@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.shopwise.R
@@ -53,6 +54,7 @@ import compose.icons.evaicons.fill.Mic
 import compose.icons.evaicons.fill.PlusCircle
 import compose.icons.evaicons.fill.StopCircle
 import dev.jeziellago.compose.markdowntext.MarkdownText
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -65,6 +67,8 @@ fun ChatScreen(navController: NavController, viewModel: ChatViewModel = viewMode
     val selectedBitmaps = remember { mutableStateListOf<Bitmap>() }
     val listState = rememberLazyListState()
 
+    var photoUri by remember { mutableStateOf<Uri?>(null) }
+
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris: List<Uri> ->
@@ -74,9 +78,13 @@ fun ChatScreen(navController: NavController, viewModel: ChatViewModel = viewMode
     }
 
     val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview()
-    ) { bitmap: Bitmap? ->
-        bitmap?.let { selectedBitmaps.add(it) }
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            photoUri?.let { uri ->
+                decodeUri(context, uri)?.let { selectedBitmaps.add(it) }
+            }
+        }
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -100,7 +108,7 @@ fun ChatScreen(navController: NavController, viewModel: ChatViewModel = viewMode
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        "ShopWise AI Expert",
+                        "Gemma AI Expert",
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 20.sp,
                         color = Color.Black
@@ -159,7 +167,11 @@ fun ChatScreen(navController: NavController, viewModel: ChatViewModel = viewMode
                     isSending = viewModel.isSending,
                     isRecording = viewModel.isRecording,
                     onPickImage = { imagePickerLauncher.launch("image/*") },
-                    onTakeFoto = { cameraLauncher.launch() },
+                    onTakeFoto = { 
+                        val uri = createTempImageUri(context)
+                        photoUri = uri
+                        cameraLauncher.launch(uri)
+                    },
                     onMicClick = {
                         if (viewModel.isRecording) {
                             viewModel.stopRecording()
@@ -558,6 +570,18 @@ fun ChatBottomBar(
             }
         }
     }
+}
+
+fun createTempImageUri(context: Context): Uri {
+    val tempFile = File.createTempFile("high_res_photo_", ".jpg", context.cacheDir).apply {
+        createNewFile()
+        deleteOnExit()
+    }
+    return FileProvider.getUriForFile(
+        context,
+        "${context.packageName}.fileprovider",
+        tempFile
+    )
 }
 
 fun decodeUri(context: Context, uri: Uri): Bitmap? {

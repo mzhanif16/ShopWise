@@ -157,10 +157,10 @@ fun HomeScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Insight Row
-        GemmaInsightRow()
+//        Spacer(modifier = Modifier.height(24.dp))
+//
+//        // Insight Row
+//        GemmaInsightRow()
 
         Spacer(modifier = Modifier.height(32.dp))
     }
@@ -357,13 +357,20 @@ fun AIAssistantButton(onClick: () -> Unit) {
                 contentDescription = null,
                 tint = Color(0xFF004069)
             )
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(10.dp))
             Text(
                 text = "AI Assistant ready for\ningredient analysis",
                 fontSize = 16.sp,
                 lineHeight = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF004069)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Icon(
+                painter = painterResource(R.drawable.img_arrow_right),
+                contentDescription = null,
+                tint = Color(0xFF004069),
+                modifier = Modifier.size(16.dp)
             )
         }
     }
