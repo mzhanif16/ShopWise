@@ -87,6 +87,16 @@ fun ChatScreen(navController: NavController, viewModel: ChatViewModel = viewMode
         }
     }
 
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            val uri = createTempImageUri(context)
+            photoUri = uri
+            cameraLauncher.launch(uri)
+        }
+    }
+
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -168,9 +178,17 @@ fun ChatScreen(navController: NavController, viewModel: ChatViewModel = viewMode
                     isRecording = viewModel.isRecording,
                     onPickImage = { imagePickerLauncher.launch("image/*") },
                     onTakeFoto = { 
-                        val uri = createTempImageUri(context)
-                        photoUri = uri
-                        cameraLauncher.launch(uri)
+                        val hasCameraPermission = ContextCompat.checkSelfPermission(
+                            context, Manifest.permission.CAMERA
+                        ) == PackageManager.PERMISSION_GRANTED
+
+                        if (hasCameraPermission) {
+                            val uri = createTempImageUri(context)
+                            photoUri = uri
+                            cameraLauncher.launch(uri)
+                        } else {
+                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                        }
                     },
                     onMicClick = {
                         if (viewModel.isRecording) {
