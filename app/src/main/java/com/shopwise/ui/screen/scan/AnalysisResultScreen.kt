@@ -3,8 +3,12 @@ package com.shopwise.ui.screen.scan
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.speech.tts.TextToSpeech
 import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -39,12 +43,17 @@ import androidx.navigation.NavController
 import com.shopwise.R
 import com.shopwise.ui.navigation.Routes
 import com.shopwise.ui.theme.PrimaryColor
+import compose.icons.EvaIcons
+import compose.icons.evaicons.Fill
+import compose.icons.evaicons.fill.PlayCircle
+import compose.icons.evaicons.fill.StopCircle
 import dev.jeziellago.compose.markdowntext.MarkdownText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
+import java.util.Locale
 
 @Composable
 fun AnalysisResultScreen(
@@ -59,6 +68,26 @@ fun AnalysisResultScreen(
     val bitmaps = remember { mutableStateListOf<Bitmap>() }
     var isSafe by remember { mutableStateOf<Boolean?>(null) }
     var hasStartedAnalysis by remember { mutableStateOf(false) }
+
+    // Text to Speech Initialization
+    val tts = remember {
+        var textToSpeech: TextToSpeech? = null
+        textToSpeech = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                textToSpeech?.language = Locale("id", "ID")
+                textToSpeech?.setPitch(1.1f)
+                textToSpeech?.setSpeechRate(1.0f)
+            }
+        }
+        textToSpeech
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            tts?.stop()
+            tts?.shutdown()
+        }
+    }
 
     LaunchedEffect(imageUri) {
         if (!hasStartedAnalysis) {
@@ -101,7 +130,7 @@ fun AnalysisResultScreen(
     if (isAnalyzing && analysisResult.isEmpty()) {
         LoadingView()
     } else {
-        ResultContent(navController, bitmaps, isSafe, analysisResult)
+        ResultContent(navController, bitmaps, isSafe, analysisResult, tts, isAnalyzing)
     }
 }
 
@@ -167,14 +196,18 @@ fun ResultContent(
     navController: NavController, 
     bitmaps: List<Bitmap>, 
     isSafe: Boolean?,
-    analysisResult: String
+    analysisResult: String,
+    tts: TextToSpeech?,
+    isAnalyzing: Boolean
 ) {
     val scrollState = rememberScrollState()
     
     // Typewriter effect state
     var displayedText by remember { mutableStateOf("") }
+    var hasSpokenAutomatically by remember { mutableStateOf(false) }
+    var isMuted by remember { mutableStateOf(false) }
     
-    // Catch up displayedText to analysisResult smoothly
+    // Typewriter animation
     LaunchedEffect(analysisResult) {
         if (analysisResult.length > displayedText.length) {
             val newText = analysisResult.substring(displayedText.length)
@@ -184,8 +217,20 @@ fun ResultContent(
             }
         }
     }
+
+    // Trigger voice ONLY when analysis is completely finished
+    LaunchedEffect(isAnalyzing, displayedText) {
+        if (!isAnalyzing && analysisResult.isNotEmpty() && !hasSpokenAutomatically && !isMuted) {
+            if (displayedText.length >= analysisResult.length) {
+                // Filter asterisks from text before speaking
+                val cleanText = analysisResult.replace("*", "")
+                tts?.speak(cleanText, TextToSpeech.QUEUE_FLUSH, null, null)
+                hasSpokenAutomatically = true
+            }
+        }
+    }
     
-    // Auto-scroll logic: Reverted to simple maxValue scroll
+    // Auto-scroll logic
     LaunchedEffect(displayedText) {
         if (displayedText.isNotEmpty() && isSafe == null) {
             scrollState.animateScrollTo(scrollState.maxValue)
@@ -321,36 +366,63 @@ fun ResultContent(
             }
 
             Surface(
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 color = boxBgColor,
                 shape = RoundedCornerShape(24.dp)
             ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            painterResource(R.drawable.img_gemma),
-                            contentDescription = null,
-                            modifier = Modifier.size(80.dp),
-                            tint = boxTextColor
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            "AI Safety Analysis",
-                            fontWeight = FontWeight.Bold,
-                            color = boxTextColor,
-                            fontSize = 24.sp
+                Box {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                painterResource(R.drawable.img_gemma),
+                                contentDescription = null,
+                                modifier = Modifier.size(80.dp),
+                                tint = boxTextColor
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                "AI Safety Analysis",
+                                fontWeight = FontWeight.Bold,
+                                color = boxTextColor,
+                                fontSize = 24.sp
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        MarkdownText(
+                            markdown = displayedText.ifEmpty { "Gemma is reading the labels..." },
+                            style = TextStyle(
+                                color = boxTextColor,
+                                fontSize = 14.sp,
+                                lineHeight = 20.sp
+                            )
                         )
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    MarkdownText(
-                        markdown = displayedText.ifEmpty { "Gemma is reading the labels..." },
-                        style = TextStyle(
-                            color = boxTextColor,
-                            fontSize = 14.sp,
-                            lineHeight = 20.sp
-                        )
-                    )
+
+                    // --- STOP/MUTE BUTTON ---
+                    if (analysisResult.isNotEmpty() && !isAnalyzing) {
+                        IconButton(
+                            onClick = { 
+                                isMuted = !isMuted
+                                if (isMuted) {
+                                    tts?.stop()
+                                } else {
+                                    val cleanText = analysisResult.replace("*", "")
+                                    tts?.speak(cleanText, TextToSpeech.QUEUE_FLUSH, null, null)
+                                }
+                            },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(12.dp)
+                                .background(boxTextColor.copy(alpha = 0.1f), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = if (isMuted) EvaIcons.Fill.PlayCircle else EvaIcons.Fill.StopCircle,
+                                contentDescription = "Mute",
+                                tint = boxTextColor,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
                 }
             }
 
