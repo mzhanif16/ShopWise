@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
@@ -69,6 +70,9 @@ fun AnalysisResultScreen(
     var isSafe by remember { mutableStateOf<Boolean?>(null) }
     var hasStartedAnalysis by remember { mutableStateOf(false) }
 
+    // State to track if TTS is currently speaking
+    var isSpeaking by remember { mutableStateOf(false) }
+
     // Text to Speech Initialization
     val tts = remember {
         var textToSpeech: TextToSpeech? = null
@@ -77,6 +81,22 @@ fun AnalysisResultScreen(
                 textToSpeech?.language = Locale("id", "ID")
                 textToSpeech?.setPitch(1.1f)
                 textToSpeech?.setSpeechRate(1.0f)
+                
+                // Set listener to detect when speech ends or is stopped
+                textToSpeech?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                    override fun onStart(utteranceId: String?) {
+                        isSpeaking = true
+                    }
+                    override fun onDone(utteranceId: String?) {
+                        isSpeaking = false
+                    }
+                    override fun onError(utteranceId: String?) {
+                        isSpeaking = false
+                    }
+                    override fun onStop(utteranceId: String?, interrupted: Boolean) {
+                        isSpeaking = false
+                    }
+                })
             }
         }
         textToSpeech
@@ -130,7 +150,7 @@ fun AnalysisResultScreen(
     if (isAnalyzing && analysisResult.isEmpty()) {
         LoadingView()
     } else {
-        ResultContent(navController, bitmaps, isSafe, analysisResult, tts, isAnalyzing)
+        ResultContent(navController, bitmaps, isSafe, analysisResult, tts, isAnalyzing, isSpeaking)
     }
 }
 
@@ -198,14 +218,14 @@ fun ResultContent(
     isSafe: Boolean?,
     analysisResult: String,
     tts: TextToSpeech?,
-    isAnalyzing: Boolean
+    isAnalyzing: Boolean,
+    isSpeaking: Boolean
 ) {
     val scrollState = rememberScrollState()
     
     // Typewriter effect state
     var displayedText by remember { mutableStateOf("") }
     var hasSpokenAutomatically by remember { mutableStateOf(false) }
-    var isMuted by remember { mutableStateOf(false) }
     
     // Typewriter animation
     LaunchedEffect(analysisResult) {
@@ -218,13 +238,27 @@ fun ResultContent(
         }
     }
 
+    // Helper for language detection and speaking
+    fun speakWithAutoLanguage(text: String) {
+        val cleanText = text.replace("*", "")
+        val englishKeywords = listOf("safe", "danger", "warning", "detected", "analysis", "ingredients", "allergen")
+        val isEnglish = englishKeywords.any { cleanText.contains(it, ignoreCase = true) }
+        
+        if (isEnglish) {
+            tts?.setLanguage(Locale.US)
+        } else {
+            tts?.setLanguage(Locale("id", "ID"))
+        }
+        
+        // Use a unique utterance ID to trigger listener events
+        tts?.speak(cleanText, TextToSpeech.QUEUE_FLUSH, null, "analysis_utterance_id")
+    }
+
     // Trigger voice ONLY when analysis is completely finished
     LaunchedEffect(isAnalyzing, displayedText) {
-        if (!isAnalyzing && analysisResult.isNotEmpty() && !hasSpokenAutomatically && !isMuted) {
+        if (!isAnalyzing && analysisResult.isNotEmpty() && !hasSpokenAutomatically) {
             if (displayedText.length >= analysisResult.length) {
-                // Filter asterisks from text before speaking
-                val cleanText = analysisResult.replace("*", "")
-                tts?.speak(cleanText, TextToSpeech.QUEUE_FLUSH, null, null)
+                speakWithAutoLanguage(analysisResult)
                 hasSpokenAutomatically = true
             }
         }
@@ -376,7 +410,7 @@ fun ResultContent(
                             Icon(
                                 painterResource(R.drawable.img_gemma),
                                 contentDescription = null,
-                                modifier = Modifier.size(80.dp),
+                                modifier = Modifier.size(100.dp),
                                 tint = boxTextColor
                             )
                             Spacer(modifier = Modifier.width(12.dp))
@@ -398,26 +432,26 @@ fun ResultContent(
                         )
                     }
 
-                    // --- STOP/MUTE BUTTON ---
+                    // --- STOP/PLAY BUTTON ---
                     if (analysisResult.isNotEmpty() && !isAnalyzing) {
                         IconButton(
                             onClick = { 
-                                isMuted = !isMuted
-                                if (isMuted) {
+                                if (isSpeaking) {
                                     tts?.stop()
+                                    // Manually reset state for immediate UI feedback
+                                    // isSpeaking is also handled in listener onStop
                                 } else {
-                                    val cleanText = analysisResult.replace("*", "")
-                                    tts?.speak(cleanText, TextToSpeech.QUEUE_FLUSH, null, null)
+                                    speakWithAutoLanguage(analysisResult)
                                 }
                             },
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
                                 .padding(12.dp)
-                                .background(boxTextColor.copy(alpha = 0.1f), CircleShape)
+                                .background(boxTextColor.copy(alpha = 0.1f), CircleShape).size(25.dp)
                         ) {
                             Icon(
-                                imageVector = if (isMuted) EvaIcons.Fill.PlayCircle else EvaIcons.Fill.StopCircle,
-                                contentDescription = "Mute",
+                                imageVector = if (isSpeaking) EvaIcons.Fill.StopCircle else EvaIcons.Fill.PlayCircle,
+                                contentDescription = "Speech Control",
                                 tint = boxTextColor,
                                 modifier = Modifier.size(20.dp)
                             )
