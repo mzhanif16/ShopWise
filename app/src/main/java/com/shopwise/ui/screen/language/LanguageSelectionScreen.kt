@@ -67,7 +67,7 @@ fun LanguageSelectionScreen(navController: NavController) {
                 if (selectedLanguage.isNotEmpty()) {
                     userPreferences.setLanguage(selectedLanguage)
                     
-                    // Terapkan locale segera agar Onboarding langsung berubah bahasanya
+                    // Terapkan locale ke Activity DAN Application Context
                     updateLocale(context as Activity, selectedLanguage)
                     
                     navController.navigate(Routes.ONBOARDING) {
@@ -95,10 +95,16 @@ fun LanguageSelectionScreen(navController: NavController) {
 private fun updateLocale(activity: Activity, languageCode: String) {
     val locale = Locale(languageCode)
     Locale.setDefault(locale)
+    
     val resources = activity.resources
     val config = resources.configuration
     config.setLocale(locale)
+    
+    // Perbarui Activity Resources
     resources.updateConfiguration(config, resources.displayMetrics)
+    
+    // PENTING: Perbarui juga Application Context agar ViewModel mendapatkan bahasa yang benar
+    activity.applicationContext.resources.updateConfiguration(config, resources.displayMetrics)
 }
 
 @Composable

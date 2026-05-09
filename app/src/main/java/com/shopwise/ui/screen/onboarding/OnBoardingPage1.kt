@@ -68,7 +68,7 @@ fun OnBoardingPage1(
     onHeightChange: (String) -> Unit,
     weight: String,
     onWeightChange: (String) -> Unit,
-    selectedGender: String,
+    selectedGender: String, // Store "Male" or "Female" as constant ID
     onGenderChange: (String) -> Unit
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
@@ -83,7 +83,6 @@ fun OnBoardingPage1(
             confirmButton = {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { millis ->
-                        // Format is generally locale-dependent, but for display we can use a standard one or localized
                         val sdf = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault())
                         onBirthDateChange(sdf.format(Date(millis)))
                     }
@@ -332,7 +331,10 @@ fun GenderSelector(
     selectedGender: String,
     onGenderSelected: (String) -> Unit
 ) {
-    val genders = listOf(stringResource(R.string.gender_female), stringResource(R.string.gender_male))
+    val genders = listOf(
+        "Female" to stringResource(R.string.gender_female),
+        "Male" to stringResource(R.string.gender_male)
+    )
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -341,20 +343,20 @@ fun GenderSelector(
             .padding(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        genders.forEach { gender ->
-            val isSelected = selectedGender == gender
+        genders.forEach { (id, label) ->
+            val isSelected = selectedGender == id
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
                     .clip(RoundedCornerShape(28.dp))
                     .background(if (isSelected) Color.White else Color.Transparent)
-                    .clickable { onGenderSelected(gender) }
+                    .clickable { onGenderSelected(id) }
                     .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = gender,
+                    text = label,
                     color = if (isSelected) PrimaryColor else Color.Gray,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                     fontSize = 14.sp

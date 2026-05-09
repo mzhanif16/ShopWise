@@ -63,4 +63,69 @@
     <string name="step_indicator">STEP %1$d OF 3</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
+
+    <!-- Home Screen -->
+    <string name="welcome_back">WELCOME BACK</string>
+    <string name="hello_user">Hello, %1$s!</string>
+    <string name="allergy_status_active">Your allergy profile is active. Scanning for %1$s.</string>
+    <string name="quick_photo">QUICK PHOTO</string>
+    <string name="ai_assistant_ready">AI Assistant ready for\ningredient analysis</string>
+    <string name="recent_scans">Recent Scans</string>
+    <string name="view_history">View History</string>
+    <string name="no_recent_scans">No recent scans yet</string>
+    <string name="just_now">Just now</string>
+    <string name="minutes_ago">%1$d minutes ago</string>
+    <string name="hours_ago">%1$d hours ago</string>
+    <string name="days_ago">%1$d days ago</string>
+    <string name="preparing_brain">Preparing intelligence brain...</string>
+    <string name="status_safe">SAFE</string>
+    <string name="status_alert">ALERT</string>
+
+    <!-- Dashboard & Navigation -->
+    <string name="brain_active">Brain Active</string>
+    <string name="initializing">Initializing...</string>
+    <string name="failed_load_model">Failed to load model</string>
+    <string name="not_downloaded">Not Downloaded</string>
+    <string name="ready_to_load">Ready to load</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_model">Model</string>
+    <string name="nav_profile">Profile</string>
+    
+    <!-- Model Setup (Dashboard Tab) -->
+    <string name="intelligence_center">Intelligence Center</string>
+    <string name="model_setup_desc">Select your preferred AI model. Higher models provide deeper analysis but require more storage.</string>
+    <string name="best_analysis_badge">BEST ANALYSIS</string>
+    <string name="gemma_4b_dashboard">Gemma 4B (Advanced)</string>
+    <string name="gemma_4b_dashboard_desc">Deep clinical precision. Detects complex allergen cross-contaminations and nutritional nuances.</string>
+    <string name="gemma_2b_dashboard">Gemma 2B (Lite &amp; Fast)</string>
+    <string name="gemma_2b_dashboard_desc">Quick scans for essential allergen detection. Optimized for efficiency.</string>
+    <string name="efficient_badge_dashboard">EFFICIENT</string>
+
+    <!-- Profile Screen -->
+    <string name="height_cm_label">HEIGHT (CM)</string>
+    <string name="weight_kg_label">WEIGHT (KG)</string>
+    <string name="allergies_sensitivities">ALLERGIES &amp; SENSITIVITIES</string>
+    <string name="add_new">+ ADD NEW</string>
+    <string name="add_new_allergy_title">Add New Allergy</string>
+    <string name="add_allergy_placeholder">e.g. Seafood, Eggs</string>
+    <string name="add_button">Add</string>
+    <string name="enter_value">Enter value</string>
+    <string name="gemma_notes">Gemma utilizes this biological context to provide personalized clinical grade ingredient analysis.</string>
+
+    <!-- Chat Screen -->
+    <string name="chat_title">Gemma AI Expert</string>
+    <string name="chat_ready_title">Ready to Analyze?</string>
+    <string name="chat_ready_subtitle">Send images of food labels for instant analysis</string>
+    <string name="chat_placeholder">Type a message or describe food...</string>
+    <string name="chat_listening">Listening...</string>
+    <string name="chat_analyzing">Analyzing content...</string>
+    <string name="chat_gallery">Gallery</string>
+    <string name="chat_take_photo">Take Photo</string>
+    <string name="chat_voice_clipping">Voice clipping</string>
+    <string name="chat_system_label">SYSTEM</string>
+    <string name="chat_assistant_label">ASSISTANT</string>
+    <string name="chat_me_label">ME</string>
+    <string name="chat_add_content">Add content</string>
+    <string name="chat_voice_input">Voice input</string>
+    <string name="asisten_fisrt_chat">Hello! I have analyzed your allergy profile. How can I help you navigate your grocery choices today? I can check for specific ingredients or dietary compatibility.</string>
 </resources>

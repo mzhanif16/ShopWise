@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -66,7 +67,7 @@ fun ModelSetupScreen(dashboardViewModel: DashboardViewModel) {
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "Intelligence Center",
+            text = stringResource(R.string.intelligence_center),
             color = Color.Black,
             fontWeight = FontWeight.Bold,
             fontSize = 32.sp
@@ -75,7 +76,7 @@ fun ModelSetupScreen(dashboardViewModel: DashboardViewModel) {
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "Select your preferred AI model. Higher models provide deeper analysis but require more storage.",
+            text = stringResource(R.string.model_setup_desc),
             color = Color.Gray,
             fontSize = 16.sp,
             lineHeight = 24.sp
@@ -86,11 +87,11 @@ fun ModelSetupScreen(dashboardViewModel: DashboardViewModel) {
         // Model 4B Card
         model4B?.let { model ->
             ModelSelectionCardInDashboard(
-                title = "Gemma 4B (Advanced)",
-                description = "Deep clinical precision. Detects complex allergen cross-contaminations and nutritional nuances.",
-                storage = "3.65GB Storage",
+                title = stringResource(R.string.gemma_4b_dashboard),
+                description = stringResource(R.string.gemma_4b_dashboard_desc),
+                storage = stringResource(R.string.storage_suffix, "3.65GB"),
                 icon = painterResource(R.drawable.img_e4b),
-                badgeText = "BEST ANALYSIS",
+                badgeText = stringResource(R.string.best_analysis_badge),
                 isSelected = selectedModel == "4B",
                 isDownloaded = model.isDownloaded,
                 isDownloading = model.isDownloading,
@@ -107,11 +108,11 @@ fun ModelSetupScreen(dashboardViewModel: DashboardViewModel) {
         // Model 2B Card
         model2B?.let { model ->
             ModelSelectionCardInDashboard(
-                title = "Gemma 2B (Lite & Fast)",
-                description = "Quick scans for essential allergen detection. Optimized for efficiency.",
-                storage = "2.58GB Storage",
+                title = stringResource(R.string.gemma_2b_dashboard),
+                description = stringResource(R.string.gemma_2b_dashboard_desc),
+                storage = stringResource(R.string.storage_suffix, "2.58GB"),
                 icon = painterResource(R.drawable.img_e2b),
-                badgeText = "EFFICIENT",
+                badgeText = stringResource(R.string.efficient_badge_dashboard),
                 isSelected = selectedModel == "2B",
                 isDownloaded = model.isDownloaded,
                 isDownloading = model.isDownloading,
@@ -291,7 +292,7 @@ fun ModelSelectionCardInDashboard(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    "Download",
+                                    stringResource(R.string.download_button),
                                     fontSize = 12.sp,
                                     color = if (isSelected) Color.White else Color.Gray
                                 )
@@ -308,7 +309,7 @@ fun ModelSelectionCardInDashboard(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Ready",
+                            text = stringResource(R.string.ready_status),
                             color = Color(0xFF4CAF50),
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp

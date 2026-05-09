@@ -27,11 +27,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.shopwise.R
 import com.shopwise.ui.screen.onboarding.GemmaViewModel
 import com.shopwise.ui.theme.PrimaryColor
 import compose.icons.EvaIcons
@@ -102,28 +104,28 @@ fun DashboardTopBar(
         title = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    "ShopWise",
+                    stringResource(R.string.app_name),
                     fontWeight = FontWeight.Bold,
                     color = PrimaryColor,
                     fontSize = 18.sp
                 )
                 if (isReady) {
                     Text(
-                        text = "Brain Active",
+                        text = stringResource(R.string.brain_active),
                         fontSize = 10.sp,
                         color = Color(0xFF4CAF50),
                         fontWeight = FontWeight.Bold
                     )
                 } else if (dashboardViewModel.isModelInitializing) {
                     Text(
-                        text = "Initializing...",
+                        text = stringResource(R.string.initializing),
                         fontSize = 10.sp,
                         color = PrimaryColor,
                         fontWeight = FontWeight.Bold
                     )
-                }else{
+                } else {
                     Text(
-                        text = "Failed to load model",
+                        text = stringResource(R.string.failed_load_model),
                         fontSize = 10.sp,
                         color = Color.Red,
                         fontWeight = FontWeight.Bold
@@ -144,14 +146,14 @@ fun DashboardTopBar(
                 )
                 if (modelState?.isDownloaded == false) {
                     Text(
-                        text = "Not Downloaded",
+                        text = stringResource(R.string.not_downloaded),
                         fontSize = 9.sp,
                         color = Color.Red,
                         fontWeight = FontWeight.Medium
                     )
                 } else if (!isReady && !dashboardViewModel.isModelInitializing) {
                     Text(
-                        text = "Ready to load",
+                        text = stringResource(R.string.ready_to_load),
                         fontSize = 9.sp,
                         color = Color.Gray
                     )
@@ -175,7 +177,7 @@ fun DashboardBottomBar(selectedIndex: Int, onItemSelected: (Int) -> Unit) {
                 selected = selectedIndex == 0,
                 onClick = { onItemSelected(0) },
                 icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-                label = { Text("Home") },
+                label = { Text(stringResource(R.string.nav_home)) },
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = PrimaryColor,
                     selectedTextColor = PrimaryColor,
@@ -188,7 +190,7 @@ fun DashboardBottomBar(selectedIndex: Int, onItemSelected: (Int) -> Unit) {
                 selected = selectedIndex == 1,
                 onClick = { onItemSelected(1) },
                 icon = { Icon(EvaIcons.Fill.Options2, contentDescription = "Intelligence", modifier = Modifier.size(24.dp)) },
-                label = { Text("Model", fontSize = 11.sp, fontWeight = FontWeight.Medium) },
+                label = { Text(stringResource(R.string.nav_model), fontSize = 11.sp, fontWeight = FontWeight.Medium) },
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = PrimaryColor,
                     selectedTextColor = PrimaryColor,
@@ -201,7 +203,7 @@ fun DashboardBottomBar(selectedIndex: Int, onItemSelected: (Int) -> Unit) {
                 selected = selectedIndex == 2,
                 onClick = { onItemSelected(2) },
                 icon = { Icon(Icons.Default.Person, contentDescription = "Profile", modifier = Modifier.size(24.dp)) },
-                label = { Text("Profile", fontSize = 11.sp, fontWeight = FontWeight.Medium) },
+                label = { Text(stringResource(R.string.nav_profile), fontSize = 11.sp, fontWeight = FontWeight.Medium) },
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = PrimaryColor,
                     selectedTextColor = PrimaryColor,

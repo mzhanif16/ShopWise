@@ -1,6 +1,7 @@
 package com.shopwise.ui.screen.chat
 
 import android.annotation.SuppressLint
+import android.app.Application
 import android.content.Context
 import android.graphics.Bitmap
 import android.media.AudioFormat
@@ -11,14 +12,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.shopwise.R
 import com.shopwise.core.GemmaManager
 import com.shopwise.core.GemmaUtils
 import com.shopwise.core.UserPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -31,7 +32,7 @@ data class ChatMessage(
     val isAudio: Boolean = false
 )
 
-class ChatViewModel : ViewModel() {
+class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     private val TAG = "ChatViewModel"
     private val gemmaManager: GemmaManager? = GemmaUtils.gemmaManager
@@ -46,7 +47,16 @@ class ChatViewModel : ViewModel() {
 
     init {
         // Initial message from Gemma
-        messages.add(ChatMessage("Hello! I've analyzed your allergy profile. How can I help you navigate your grocery choices today? I can check for specific ingredients or dietary compatibility.", false))
+
+        val welcome =
+            getApplication<Application>().getString(R.string.asisten_fisrt_chat)
+
+        messages.add(
+            ChatMessage(
+                text = welcome,
+                isUser = false
+            )
+        )
         observeGemmaResults()
     }
 
@@ -83,21 +93,34 @@ class ChatViewModel : ViewModel() {
     }
 
     fun sendMessage(prompt: String, context: Context, bitmaps: List<Bitmap>? = null, audioBytes: ByteArray? = null) {
-        if ((prompt.isBlank() && bitmaps.isNullOrEmpty()) || isSending || gemmaManager == null) return
+        if ((prompt.isBlank() && bitmaps.isNullOrEmpty() && audioBytes == null) || isSending || gemmaManager == null) return
 
         val userPreferences = UserPreferences(context)
         val userData = userPreferences.getUserData()
         val allergies = (userData["allergies"] as? Set<*>)?.joinToString(", ") ?: "None"
+        val language = userPreferences.getLanguage() ?: "en"
 
-        val systemPrompt = """
-            You are "ShopWise", an AI assistant specialized in nutrition and food safety. 
-            User has allergies: $allergies. 
-            Answer the user's question accurately and concisely.
-        """.trimIndent()
+        // Instruksi sistem agar AI menjawab dalam bahasa yang dipilih
+        val systemPrompt = if (language == "in") {
+            """
+                Anda adalah "ShopWise", asisten AI pakar nutrisi dan keamanan pangan.
+                Pengguna memiliki alergi: $allergies.
+                Jawab pertanyaan pengguna dengan akurat, ramah, dan singkat dalam Bahasa Indonesia.
+            """.trimIndent()
+        } else {
+            """
+                You are "ShopWise", an AI assistant specialized in nutrition and food safety. 
+                User has allergies: $allergies. 
+                Answer the user's question accurately, friendly, and concisely in English.
+            """.trimIndent()
+        }
 
         val finalPrompt = if (prompt.isNotBlank()) "$systemPrompt\n\nUser: $prompt" else systemPrompt
 
-        messages.add(ChatMessage(prompt, true, images = bitmaps))
+        if (audioBytes == null) {
+            messages.add(ChatMessage(prompt, true, images = bitmaps))
+        }
+        
         isSending = true
         isThinking = true
         fullResponse = ""
@@ -107,7 +130,7 @@ class ChatViewModel : ViewModel() {
 
 
     @SuppressLint("MissingPermission")
-    fun startRecording() {
+    fun startRecording(context: Context) {
         val sampleRate = 16000
         val channelConfig = AudioFormat.CHANNEL_IN_MONO
         val audioFormat = AudioFormat.ENCODING_PCM_16BIT
@@ -124,6 +147,25 @@ class ChatViewModel : ViewModel() {
         val outputStream = ByteArrayOutputStream()
         audioRecord?.startRecording()
         isRecording = true
+        // Instruksi sistem agar AI menjawab dalam bahasa yang dipilih
+
+        val userPreferences = UserPreferences(context)
+        val userData = userPreferences.getUserData()
+        val allergies = (userData["allergies"] as? Set<*>)?.joinToString(", ") ?: "None"
+        val language = userPreferences.getLanguage() ?: "en"
+        val systemPrompt = if (language == "in") {
+            """
+                Anda adalah "ShopWise", asisten AI pakar nutrisi dan keamanan pangan.
+                Pengguna memiliki alergi: $allergies.
+                Jawab pertanyaan pengguna dengan akurat, ramah, dan dalam Bahasa Indonesia.
+            """.trimIndent()
+        } else {
+            """
+                You are "ShopWise", an AI assistant specialized in nutrition and food safety. 
+                User has allergies: $allergies. 
+                Answer the user's question accurately, friendly, and in English.
+            """.trimIndent()
+        }
 
         recordingJob = viewModelScope.launch(Dispatchers.IO) {
             val buffer = ByteArray(bufferSize)
@@ -135,7 +177,11 @@ class ChatViewModel : ViewModel() {
                     }
                 }
             } finally {
-                audioRecord?.stop()
+                try {
+                    audioRecord?.stop()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error stopping audio record", e)
+                }
                 audioRecord?.release()
                 audioRecord = null
             }
@@ -144,7 +190,7 @@ class ChatViewModel : ViewModel() {
             if (pcmData.isNotEmpty()) {
                 val wavData = addWavHeader(pcmData, sampleRate)
                 withContext(Dispatchers.Main) {
-                    sendAudioMessage(wavData)
+                    sendAudioMessage(wavData,systemPrompt)
                 }
             }
         }
@@ -154,12 +200,12 @@ class ChatViewModel : ViewModel() {
         isRecording = false
     }
     
-    private fun sendAudioMessage(audioData: ByteArray) {
+    private fun sendAudioMessage(audioData: ByteArray,systemPrompt: String) {
         messages.add(ChatMessage("Voice Message", true, isAudio = true))
         isSending = true
         isThinking = true
         fullResponse = ""
-        gemmaManager?.generateResponse("Help me transcribe or respond to this audio", null, audioData)
+        gemmaManager?.generateResponse(systemPrompt, null, audioData)
     }
     
     private fun addWavHeader(pcmData: ByteArray, sampleRate: Int): ByteArray {
@@ -169,7 +215,6 @@ class ChatViewModel : ViewModel() {
         val channels = 1 // Mono
         val bitsPerSample: Short = 16
         val byteRate = sampleRate * channels * bitsPerSample / 8
-        Log.d(TAG, "Wav metadata: sampleRate: $sampleRate")
 
         header[0] = 'R'.code.toByte()
         header[1] = 'I'.code.toByte()

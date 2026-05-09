@@ -4,14 +4,12 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.result.launch
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -35,7 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -101,7 +99,7 @@ fun ChatScreen(navController: NavController, viewModel: ChatViewModel = viewMode
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            viewModel.startRecording()
+            viewModel.startRecording(context)
         }
     }
 
@@ -118,7 +116,7 @@ fun ChatScreen(navController: NavController, viewModel: ChatViewModel = viewMode
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        "Gemma AI Expert",
+                        stringResource(R.string.chat_title),
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 20.sp,
                         color = Color.Black
@@ -199,7 +197,7 @@ fun ChatScreen(navController: NavController, viewModel: ChatViewModel = viewMode
                             ) == PackageManager.PERMISSION_GRANTED
                             
                             if (hasPermission) {
-                                viewModel.startRecording()
+                                viewModel.startRecording(context)
                             } else {
                                 permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                             }
@@ -235,13 +233,13 @@ fun ChatScreen(navController: NavController, viewModel: ChatViewModel = viewMode
                         }
                         Spacer(modifier = Modifier.height(20.dp))
                         Text(
-                            "Ready to Analyze?",
+                            stringResource(R.string.chat_ready_title),
                             fontWeight = FontWeight.Bold,
                             fontSize = 22.sp,
                             color = Color.Black
                         )
                         Text(
-                            "Send images of food labels for instant analysis",
+                            stringResource(R.string.chat_ready_subtitle),
                             color = Color.Gray,
                             fontSize = 14.sp,
                             modifier = Modifier.padding(top = 4.dp)
@@ -281,7 +279,7 @@ fun ThinkingAnimation() {
     ) {
         Column {
             Text(
-                "SYSTEM",
+                stringResource(R.string.chat_system_label),
                 fontWeight = FontWeight.Bold,
                 fontSize = 10.sp,
                 color = Color.Gray
@@ -296,7 +294,7 @@ fun ThinkingAnimation() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "Analyzing content...",
+                        stringResource(R.string.chat_analyzing),
                         color = Color.DarkGray,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
@@ -342,7 +340,7 @@ fun ChatBubble(message: ChatMessage) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (!message.isUser) {
                 Text(
-                    "ASSISTANT",
+                    stringResource(R.string.chat_assistant_label),
                     fontWeight = FontWeight.Bold,
                     fontSize = 10.sp,
                     color = PrimaryColor
@@ -357,7 +355,7 @@ fun ChatBubble(message: ChatMessage) {
             if (message.isUser) {
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    "ME",
+                    stringResource(R.string.chat_me_label),
                     fontWeight = FontWeight.Bold,
                     fontSize = 10.sp,
                     color = Color.Gray
@@ -402,7 +400,7 @@ fun ChatBubble(message: ChatMessage) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(EvaIcons.Fill.Mic, contentDescription = null, tint = textColor, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(text = "Voice clipping", fontSize = 14.sp, color = textColor)
+                        Text(text = stringResource(R.string.chat_voice_clipping), fontSize = 14.sp, color = textColor)
                     }
                 } else if (message.text.isNotEmpty()) {
                     MarkdownText(
@@ -416,24 +414,6 @@ fun ChatBubble(message: ChatMessage) {
                 }
             }
         }
-    }
-}
-
-@Composable
-fun QuickActionChip(text: String) {
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEEEEEE)),
-        modifier = Modifier.clickable { /* TODO */ }
-    ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color.DarkGray
-        )
     }
 }
 
@@ -496,7 +476,7 @@ fun ChatBottomBar(
                     IconButton(onClick = { showMenu = !showMenu }) {
                         Icon(
                             imageVector = EvaIcons.Fill.PlusCircle,
-                            contentDescription = "Add content",
+                            contentDescription = stringResource(R.string.chat_add_content),
                             tint = PrimaryColor,
                             modifier = Modifier.size(26.dp)
                         )
@@ -507,7 +487,7 @@ fun ChatBottomBar(
                         modifier = Modifier.background(Color.White)
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Gallery") },
+                            text = { Text(stringResource(R.string.chat_gallery)) },
                             onClick = { 
                                 showMenu = false
                                 onPickImage() 
@@ -515,7 +495,7 @@ fun ChatBottomBar(
                             leadingIcon = { Icon(EvaIcons.Fill.Image, contentDescription = null, tint = PrimaryColor) }
                         )
                         DropdownMenuItem(
-                            text = { Text("Take Photo") },
+                            text = { Text(stringResource(R.string.chat_take_photo)) },
                             onClick = { 
                                 showMenu = false
                                 onTakeFoto() 
@@ -537,13 +517,13 @@ fun ChatBottomBar(
                     ) {
                         VoiceRecordingAnimation()
                         Spacer(modifier = Modifier.width(16.dp))
-                        Text("Listening...", color = PrimaryColor, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.chat_listening), color = PrimaryColor, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     }
                 } else {
                     TextField(
                         value = textValue,
                         onValueChange = onValueChange,
-                        placeholder = { Text("Type a message or describe food...", color = Color.LightGray) },
+                        placeholder = { Text(stringResource(R.string.chat_placeholder), color = Color.LightGray) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
@@ -559,7 +539,7 @@ fun ChatBottomBar(
             IconButton(onClick = onMicClick) {
                 Icon(
                     imageVector = if (isRecording) EvaIcons.Fill.StopCircle else EvaIcons.Fill.Mic,
-                    contentDescription = "Voice input",
+                    contentDescription = stringResource(R.string.chat_voice_input),
                     tint = if (isRecording) Color.Red else PrimaryColor,
                     modifier = Modifier.size(24.dp)
                 )

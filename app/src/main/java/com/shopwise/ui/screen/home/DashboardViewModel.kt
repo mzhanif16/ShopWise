@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.shopwise.R
 import com.shopwise.core.GemmaManager
 import com.shopwise.core.GemmaUtils
 import com.shopwise.core.UserPreferences
@@ -46,7 +47,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
             isModelInitializing = true
             isModelReady = false
-            initializationMessage = "Initializing $selectedModel model..."
+            initializationMessage = context.getString(R.string.initializing)
 
             viewModelScope.launch(Dispatchers.IO) {
                 try {
@@ -55,7 +56,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                         GemmaUtils.gemmaManager = gemmaManager
                         isModelInitializing = false
                         isModelReady = true
-                        initializationMessage = "$selectedModel model is ready"
+                        initializationMessage = context.getString(R.string.brain_active)
                         Log.d(TAG, "Model initialized successfully: $modelId")
                     }
                 } catch (e: Exception) {
@@ -63,14 +64,17 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     withContext(Dispatchers.Main) {
                         isModelInitializing = false
                         isModelReady = false
-                        initializationMessage = "Failed to load model"
+                        initializationMessage = context.getString(R.string.failed_load_model)
                     }
                 }
             }
         } else {
             isModelReady = false
             isModelInitializing = false
-            initializationMessage = if (!modelFile.exists()) "Model not downloaded" else "Download incomplete"
+            initializationMessage = if (!modelFile.exists()) 
+                context.getString(R.string.not_downloaded) 
+            else 
+                context.getString(R.string.waiting_download)
             Log.w(TAG, "Model file not ready for $modelId: exists=${modelFile.exists()}, size=${modelFile.length()}")
         }
     }

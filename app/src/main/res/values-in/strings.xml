@@ -63,4 +63,69 @@
     <string name="step_indicator">LANGKAH %1$d DARI 3</string>
     <string name="ok">OK</string>
     <string name="cancel">Batal</string>
+
+    <!-- Home Screen -->
+    <string name="welcome_back">SELAMAT DATANG KEMBALI</string>
+    <string name="hello_user">Halo, %1$s!</string>
+    <string name="allergy_status_active">Profil alergi Anda aktif. Memindai untuk %1$s.</string>
+    <string name="quick_photo">FOTO CEPAT</string>
+    <string name="ai_assistant_ready">Asisten AI siap untuk\nanalisis bahan</string>
+    <string name="recent_scans">Pemindaian Terkini</string>
+    <string name="view_history">Lihat Riwayat</string>
+    <string name="no_recent_scans">Belum ada pemindaian</string>
+    <string name="just_now">Baru saja</string>
+    <string name="minutes_ago">%1$d menit yang lalu</string>
+    <string name="hours_ago">%1$d jam yang lalu</string>
+    <string name="days_ago">%1$d hari yang lalu</string>
+    <string name="preparing_brain">Menyiapkan otak kecerdasan...</string>
+    <string name="status_safe">AMAN</string>
+    <string name="status_alert">PERINGATAN</string>
+
+    <!-- Dashboard & Navigation -->
+    <string name="brain_active">Otak Aktif</string>
+    <string name="initializing">Menginisialisasi...</string>
+    <string name="failed_load_model">Gagal memuat model</string>
+    <string name="not_downloaded">Belum Diunduh</string>
+    <string name="ready_to_load">Siap dimuat</string>
+    <string name="nav_home">Beranda</string>
+    <string name="nav_model">Model</string>
+    <string name="nav_profile">Profil</string>
+    
+    <!-- Model Setup (Dashboard Tab) -->
+    <string name="intelligence_center">Pusat Kecerdasan</string>
+    <string name="model_setup_desc">Pilih model AI pilihan Anda. Model yang lebih tinggi memberikan analisis lebih mendalam tetapi membutuhkan lebih banyak penyimpanan.</string>
+    <string name="best_analysis_badge">ANALISIS TERBAIK</string>
+    <string name="gemma_4b_dashboard">Gemma 4B (Lanjutan)</string>
+    <string name="gemma_4b_dashboard_desc">Presisi klinis yang mendalam. Mendeteksi kontaminasi silang alergen yang kompleks dan nuansa nutrisi.</string>
+    <string name="gemma_2b_dashboard">Gemma 2B (Ringan &amp; Cepat)</string>
+    <string name="gemma_2b_dashboard_desc">Pemindaian cepat untuk deteksi alergen esensial. Dioptimalkan untuk efisiensi.</string>
+    <string name="efficient_badge_dashboard">EFISIEN</string>
+
+    <!-- Profile Screen -->
+    <string name="height_cm_label">TINGGI (CM)</string>
+    <string name="weight_kg_label">BERAT (KG)</string>
+    <string name="allergies_sensitivities">ALERGI &amp; SENSITIVITAS</string>
+    <string name="add_new">+ TAMBAH BARU</string>
+    <string name="add_new_allergy_title">Tambah Alergi Baru</string>
+    <string name="add_allergy_placeholder">misal: Seafood, Telur</string>
+    <string name="add_button">Tambah</string>
+    <string name="enter_value">Masukkan nilai</string>
+    <string name="gemma_notes">Gemma menggunakan konteks biologis ini untuk memberikan analisis bahan tingkat klinis yang dipersonalisasi.</string>
+
+    <!-- Chat Screen -->
+    <string name="chat_title">Pakar AI Gemma</string>
+    <string name="chat_ready_title">Siap Menganalisis?</string>
+    <string name="chat_ready_subtitle">Kirim gambar label makanan untuk analisis instan</string>
+    <string name="chat_placeholder">Ketik pesan atau jelaskan makanan...</string>
+    <string name="chat_listening">Mendengarkan...</string>
+    <string name="chat_analyzing">Menganalisis konten...</string>
+    <string name="chat_gallery">Galeri</string>
+    <string name="chat_take_photo">Ambil Foto</string>
+    <string name="chat_voice_clipping">Klip suara</string>
+    <string name="chat_system_label">SISTEM</string>
+    <string name="chat_assistant_label">ASISTEN</string>
+    <string name="chat_me_label">SAYA</string>
+    <string name="chat_add_content">Tambah konten</string>
+    <string name="chat_voice_input">Input suara</string>
+    <string name="asisten_fisrt_chat">Halo! Saya sudah menganalisis profil alergi Anda. Ada yang bisa saya bantu dalam memilih produk belanjaan hari ini? Saya bisa memeriksa bahan-bahan tertentu atau kesesuaian dengan pola makan Anda.</string>
 </resources>

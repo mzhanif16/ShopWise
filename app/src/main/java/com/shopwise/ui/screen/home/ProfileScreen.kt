@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,7 +71,7 @@ fun ProfileScreen() {
     var showAddDialog by remember { mutableStateOf(false) }
     var newAllergyText by remember { mutableStateOf("") }
 
-    // Helper function untuk simpan semua data ke SharedPreferences
+    // Helper function to save changes to SharedPreferences
     val saveChanges = {
         userPreferences.saveUserData(
             fullName = fullName,
@@ -93,7 +94,7 @@ fun ProfileScreen() {
         Spacer(modifier = Modifier.height(24.dp))
 
         // Form Fields
-        ProfileSectionLabel("FULL NAME")
+        ProfileSectionLabel(stringResource(R.string.full_name_label))
         ProfileTextField(value = fullName, onValueChange = {
             fullName = it
             saveChanges()
@@ -101,7 +102,7 @@ fun ProfileScreen() {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        ProfileSectionLabel("GENDER")
+        ProfileSectionLabel(stringResource(R.string.gender_label))
         ProfileGenderSelector(selectedGender = selectedGender, onGenderSelected = {
             selectedGender = it
             saveChanges()
@@ -109,7 +110,7 @@ fun ProfileScreen() {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        ProfileSectionLabel("BIRTH DATE")
+        ProfileSectionLabel(stringResource(R.string.birth_date_label))
         ProfileTextField(
             value = birthDate,
             onValueChange = {
@@ -126,7 +127,7 @@ fun ProfileScreen() {
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                ProfileSectionLabel("HEIGHT (CM)")
+                ProfileSectionLabel(stringResource(R.string.height_cm_label))
                 ProfileTextField(
                     value = height,
                     onValueChange = {
@@ -136,7 +137,7 @@ fun ProfileScreen() {
                 )
             }
             Column(modifier = Modifier.weight(1f)) {
-                ProfileSectionLabel("WEIGHT (KG)")
+                ProfileSectionLabel(stringResource(R.string.weight_kg_label))
                 ProfileTextField(value = weight, onValueChange = {
                     weight = it
                     saveChanges()
@@ -152,7 +153,7 @@ fun ProfileScreen() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "ALLERGIES & SENSITIVITIES",
+                text = stringResource(R.string.allergies_sensitivities),
                 color = Color.Gray,
                 fontWeight = FontWeight.Bold,
                 fontSize = 11.sp,
@@ -161,7 +162,7 @@ fun ProfileScreen() {
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
-                text = "+ ADD NEW",
+                text = stringResource(R.string.add_new),
                 color = PrimaryColor,
                 fontWeight = FontWeight.Bold,
                 fontSize = 12.sp,
@@ -204,7 +205,7 @@ fun ProfileScreen() {
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "Gemma notes: Keeping your weight and allergies updated helps us provide more accurate safety insights during your scans.",
+                    text = stringResource(R.string.gemma_notes),
                     color = Color(0xFF0D47A1),
                     fontSize = 13.sp,
                     lineHeight = 18.sp,
@@ -216,16 +217,16 @@ fun ProfileScreen() {
         Spacer(modifier = Modifier.height(40.dp))
     }
 
-    // Dialog Tambah Alergi
+    // Dialog Add Allergy
     if (showAddDialog) {
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
-            title = { Text("Add New Allergy") },
+            title = { Text(stringResource(R.string.add_new_allergy_title)) },
             text = {
                 OutlinedTextField(
                     value = newAllergyText,
                     onValueChange = { newAllergyText = it },
-                    placeholder = { Text("e.g. Seafood, Eggs") },
+                    placeholder = { Text(stringResource(R.string.add_allergy_placeholder)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -241,12 +242,12 @@ fun ProfileScreen() {
                         }
                     }
                 ) {
-                    Text("Add", color = PrimaryColor)
+                    Text(stringResource(R.string.add_button), color = PrimaryColor)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showAddDialog = false }) {
-                    Text("Cancel", color = Color.Gray)
+                    Text(stringResource(R.string.cancel), color = Color.Gray)
                 }
             }
         )
@@ -278,8 +279,6 @@ fun ProfileTextField(
         shape = RoundedCornerShape(12.dp),
         color = Color(0xFFF7F7F7)
     ) {
-        // Karena ini Profile, biasanya TextField harusnya bisa diketik
-        // Tapi di desain awal pakai Text, saya ubah ke BasicTextField atau TextField agar interaktif
         androidx.compose.foundation.text.BasicTextField(
             value = value,
             onValueChange = onValueChange,
@@ -303,7 +302,7 @@ fun ProfileTextField(
                         Spacer(modifier = Modifier.width(12.dp))
                     }
                     Box(modifier = Modifier.weight(1f)) {
-                        if (value.isEmpty()) Text("Enter value", color = Color.LightGray)
+                        if (value.isEmpty()) Text(stringResource(R.string.enter_value), color = Color.LightGray)
                         innerTextField()
                     }
                     if (trailingIcon != null) {
@@ -322,6 +321,10 @@ fun ProfileTextField(
 
 @Composable
 fun ProfileGenderSelector(selectedGender: String, onGenderSelected: (String) -> Unit) {
+    val genders = listOf(
+        "Female" to stringResource(R.string.gender_female),
+        "Male" to stringResource(R.string.gender_male)
+    )
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -330,20 +333,21 @@ fun ProfileGenderSelector(selectedGender: String, onGenderSelected: (String) -> 
             .padding(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        listOf("Female", "Male").forEach { gender ->
-            val isSelected = selectedGender == gender
+        genders.forEach { (id, label) ->
+            val isSelected = selectedGender == id || (selectedGender == "Perempuan" && id == "Female") || (selectedGender == "Laki-laki" && id == "Male")
+            
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
                     .clip(RoundedCornerShape(8.dp))
                     .background(if (isSelected) Color.White else Color.Transparent)
-                    .clickable { onGenderSelected(gender) }
+                    .clickable { onGenderSelected(id) }
                     .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = gender,
+                    text = label,
                     color = if (isSelected) PrimaryColor else Color.Gray,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                     fontSize = 14.sp
@@ -371,7 +375,7 @@ fun AllergyChip(name: String, onDelete: () -> Unit) {
                     .width(3.dp)
                     .height(24.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(if (name == "Lactose") Color(0xFF1E88E5) else Color(0xFFB3261E))
+                    .background(if (name == "Lactose" || name == "Susu") Color(0xFF1E88E5) else Color(0xFFB3261E))
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(text = name, fontWeight = FontWeight.Bold, fontSize = 14.sp)

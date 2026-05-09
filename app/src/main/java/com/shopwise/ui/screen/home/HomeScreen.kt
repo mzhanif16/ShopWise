@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -66,14 +67,14 @@ fun HomeScreen(
 
         // Welcome Section
         Text(
-            text = "WELCOME BACK",
+            text = stringResource(R.string.welcome_back),
             color = Color(0xFF3277D8),
             fontWeight = FontWeight.Bold,
             fontSize = 12.sp,
             letterSpacing = 1.sp
         )
         Text(
-            text = "Hello, $firstName!",
+            text = stringResource(R.string.hello_user, firstName),
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
             color = Color.Black
@@ -116,13 +117,13 @@ fun HomeScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Recent Scans",
+                text = stringResource(R.string.recent_scans),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
             Text(
-                text = "View History",
+                text = stringResource(R.string.view_history),
                 color = PrimaryColor,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
@@ -142,14 +143,14 @@ fun HomeScreen(
                     .height(100.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text("No recent scans yet", color = Color.Gray, fontSize = 14.sp)
+                Text(stringResource(R.string.no_recent_scans), color = Color.Gray, fontSize = 14.sp)
             }
         } else {
             recentScans.forEach { scan ->
                 RecentScanItem(
                     name = scan.productName,
                     time = formatTimestamp(scan.timestamp),
-                    status = if (scan.isSafe) "SAFE" else "ALERT",
+                    status = if (scan.isSafe) stringResource(R.string.status_safe) else stringResource(R.string.status_alert),
                     statusColor = if (scan.isSafe) PrimaryColor else Color(0xFFB3261E),
                     iconUri = scan.imageUri,
                     onClick = {
@@ -164,6 +165,7 @@ fun HomeScreen(
     }
 }
 
+@Composable
 fun formatTimestamp(timestamp: Long): String {
     val diff = System.currentTimeMillis() - timestamp
     val minutes = diff / (1000 * 60)
@@ -171,10 +173,10 @@ fun formatTimestamp(timestamp: Long): String {
     val days = hours / 24
     
     return when {
-        minutes < 1 -> "Just now"
-        minutes < 60 -> "$minutes minutes ago"
-        hours < 24 -> "$hours hours ago"
-        else -> "$days days ago"
+        minutes < 1 -> stringResource(R.string.just_now)
+        minutes < 60 -> stringResource(R.string.minutes_ago, minutes)
+        hours < 24 -> stringResource(R.string.hours_ago, hours)
+        else -> stringResource(R.string.days_ago, days)
     }
 }
 
@@ -220,7 +222,7 @@ fun ModelInitializingAnimation(message: String) {
                 color = PrimaryColor
             )
             Text(
-                text = "Preparing intelligence brain...",
+                text = stringResource(R.string.preparing_brain),
                 fontSize = 12.sp,
                 color = Color.Gray,
                 textAlign = TextAlign.Center
@@ -256,7 +258,7 @@ fun AllergyStatusBox(allergies: String) {
             Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = buildAnnotatedString {
-                    append("Your allergy profile is active. Scanning for ")
+                    append(stringResource(R.string.allergy_status_active))
                     withStyle(
                         style = SpanStyle(
                             fontWeight = FontWeight.Bold,
@@ -318,7 +320,7 @@ fun QuickPhotoButton(onPhotoClick: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "QUICK PHOTO",
+                    text = stringResource(R.string.quick_photo),
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
@@ -357,7 +359,7 @@ fun AIAssistantButton(onClick: () -> Unit) {
             )
             Spacer(modifier = Modifier.width(10.dp))
             Text(
-                text = "AI Assistant ready for\ningredient analysis",
+                text = stringResource(R.string.ai_assistant_ready),
                 fontSize = 16.sp,
                 lineHeight = 16.sp,
                 fontWeight = FontWeight.Bold,

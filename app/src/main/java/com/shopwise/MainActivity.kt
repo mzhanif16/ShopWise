@@ -30,9 +30,15 @@ class MainActivity : ComponentActivity() {
     private fun setAppLocale(language: String) {
         val locale = Locale(language)
         Locale.setDefault(locale)
+        
         val resources = resources
         val config = resources.configuration
         config.setLocale(locale)
+        
+        // Perbarui Activity Resources
         resources.updateConfiguration(config, resources.displayMetrics)
+        
+        // PENTING: Perbarui juga Application Context agar ViewModel mendapatkan bahasa yang benar
+        applicationContext.resources.updateConfiguration(config, resources.displayMetrics)
     }
 }
