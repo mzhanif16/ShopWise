@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -46,7 +47,7 @@ fun ScanHistoryScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Scan History",
+                        stringResource(R.string.scan_history_title),
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp
                     )
@@ -55,7 +56,7 @@ fun ScanHistoryScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.back),
                             tint = PrimaryColor
                         )
                     }
@@ -72,11 +73,14 @@ fun ScanHistoryScreen(
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
-                Text("No scan history found", color = Color.Gray)
+                Text(stringResource(R.string.no_scan_history), color = Color.Gray)
             }
         } else {
-            val groupedScans = remember(scans) {
-                scans.groupBy { formatGroupDate(it.timestamp) }
+            val todayStr = stringResource(R.string.date_today)
+            val yesterdayStr = stringResource(R.string.date_yesterday)
+            
+            val groupedScans = remember(scans, todayStr, yesterdayStr) {
+                scans.groupBy { formatGroupDate(it.timestamp, todayStr, yesterdayStr) }
             }
 
             LazyColumn(
@@ -94,7 +98,7 @@ fun ScanHistoryScreen(
                         HistoryItem(
                             name = scan.productName,
                             time = formatTimeOnly(scan.timestamp),
-                            status = if (scan.isSafe) "SAFE" else "ALERT",
+                            status = if (scan.isSafe) stringResource(R.string.status_safe) else stringResource(R.string.status_alert),
                             statusColor = if (scan.isSafe) PrimaryColor else Color(0xFFB3261E),
                             imageUri = scan.imageUri,
                             hasSideIndicator = !scan.isSafe,
@@ -115,13 +119,13 @@ fun ScanHistoryScreen(
     }
 }
 
-fun formatGroupDate(timestamp: Long): String {
+fun formatGroupDate(timestamp: Long, today: String, yesterday: String): String {
     val now = Calendar.getInstance()
     val time = Calendar.getInstance().apply { timeInMillis = timestamp }
     
     return when {
-        isSameDay(now, time) -> "TODAY"
-        isYesterday(now, time) -> "YESTERDAY"
+        isSameDay(now, time) -> today
+        isYesterday(now, time) -> yesterday
         else -> SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault()).format(Date(timestamp)).uppercase()
     }
 }
@@ -165,11 +169,6 @@ fun HistoryItem(
     hasSideIndicator: Boolean = false,
     onClick: () -> Unit
 ) {
-    // Log URI untuk debugging
-    LaunchedEffect(imageUri) {
-        Log.d("ScanHistory", "Loading Item: $name, URI: $imageUri")
-    }
-
     Surface(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -204,12 +203,7 @@ fun HistoryItem(
                             model = Uri.parse(imageUri), 
                             contentDescription = null,
                             modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
-                            onLoading = { Log.d("ScanHistory", "Image Loading: $imageUri") },
-                            onSuccess = { Log.d("ScanHistory", "Image Success: $imageUri") },
-                            onError = { error -> 
-                                Log.e("ScanHistory", "Image Error: ${error.result.throwable.message} for URI: $imageUri")
-                            }
+                            contentScale = ContentScale.Crop
                         )
                     } else {
                         Icon(
@@ -254,6 +248,8 @@ fun GemmaInsightCard(scans: List<ScanHistory>) {
     val safeScans = scans.count { it.isSafe }
     val safePercentage = if (totalScans > 0) (safeScans.toFloat() / totalScans.toFloat()) else 0f
     val percentageText = (safePercentage * 100).toInt()
+    
+    val feedbackStr = if (safePercentage > 0.7) stringResource(R.string.great_job) else stringResource(R.string.stay_cautious)
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -270,7 +266,7 @@ fun GemmaInsightCard(scans: List<ScanHistory>) {
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    "GEMMA AI INSIGHT",
+                    stringResource(R.string.gemma_insight_title),
                     color = Color(0xFF1E88E5),
                     fontWeight = FontWeight.Bold,
                     fontSize = 11.sp
@@ -278,7 +274,7 @@ fun GemmaInsightCard(scans: List<ScanHistory>) {
             }
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "You've scanned $totalScans items in total. $percentageText% of your choices were safe for your profile. ${if (safePercentage > 0.7) "Great job!" else "Stay cautious!"}",
+                text = stringResource(R.string.gemma_insight_card_text, totalScans, percentageText, feedbackStr),
                 fontSize = 14.sp,
                 color = Color(0xFF0D47A1),
                 lineHeight = 20.sp

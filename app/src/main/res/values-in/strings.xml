@@ -142,16 +142,32 @@
     <string name="gallery">Galeri</string>
     <string name="flip">Putar</string>
 
-    <!-- Analysis Result Screen -->
+    <!-- Analysis Result Screen & Detail Result -->
     <string name="loading_gemma_thinking">Gemma sedang berpikir...</string>
-    <string name="status_danger">BAHAYA</string>
+    <string name="status_danger">BERBAHAYA</string>
     <string name="status_analyzing">MENGANALISIS</string>
     <string name="no_allergens_detected">TIDAK ADA ALERGEN TERDETEKSI</string>
     <string name="severe_allergen_detected">ALERGEN BERBAHAYA TERDETEKSI</string>
     <string name="please_wait">MOHON TUNGGU SEBENTAR</string>
     <string name="product_analysis_result">Hasil Analisis Produk</string>
     <string name="ai_safety_analysis">Analisis Keamanan AI</string>
-    <string name="captured_photo">Foto yang Diambil</string>
+    <string name="captured_photo">Foto Hasil Ambilan</string>
     <string name="back_to_home">Kembali ke Beranda</string>
-    <string name="ask_gemma_details">Tanya Gemma untuk Detailnya</string>
+    <string name="ask_gemma_details">Tanya Detail ke Gemma</string>
+    <string name="reading_labels">Gemma sedang membaca label...</string>
+    <string name="scan_metadata">METADATA PEMINDAIAN</string>
+    <string name="processing_info">Analisis real-time aktif •\nDiproses oleh Kecerdasan Gemma</string>
+    <string name="scan_details">Detail Pemindaian</string>
+    <string name="analysis_record_not_found">Riwayat analisis tidak ditemukan</string>
+    <string name="product_photo">Foto Produk</string>
+    <string name="back_to_dashboard">Kembali ke Dashboard</string>
+
+    <!-- Scan History Screen -->
+    <string name="scan_history_title">Riwayat Pemindaian</string>
+    <string name="no_scan_history">Belum ada riwayat pemindaian</string>
+    <string name="date_today">HARI INI</string>
+    <string name="date_yesterday">KEMARIN</string>
+    <string name="gemma_insight_card_text">Kamu telah memindai %1$d produk. %2$d%% pilihanmu aman untuk profil kesehatanmu. %3$s</string>
+    <string name="great_job">Kerja bagus!</string>
+    <string name="stay_cautious">Tetap berhati-hati!</string>
 </resources>

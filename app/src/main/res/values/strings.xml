@@ -142,7 +142,7 @@
     <string name="gallery">Gallery</string>
     <string name="flip">Flip</string>
 
-    <!-- Analysis Result Screen -->
+    <!-- Analysis Result Screen & Detail Result -->
     <string name="loading_gemma_thinking">Gemma is thinking...</string>
     <string name="status_danger">DANGER</string>
     <string name="status_analyzing">ANALYZING</string>
@@ -151,10 +151,23 @@
     <string name="please_wait">PLEASE WAIT A MOMENT</string>
     <string name="product_analysis_result">Product Analysis Result</string>
     <string name="ai_safety_analysis">AI Safety Analysis</string>
-    <string name="captured_photo">Captured Photos</string>
+    <string name="captured_photo">Captured Photo</string>
     <string name="back_to_home">Back to Home</string>
     <string name="ask_gemma_details">Ask Gemma for Details</string>
     <string name="reading_labels">Gemma is reading the labels...</string>
     <string name="scan_metadata">SCAN METADATA</string>
     <string name="processing_info">Real-time analysis active •\nProcessing by Gemma Intelligence</string>
+    <string name="scan_details">Scan Details</string>
+    <string name="analysis_record_not_found">Analysis record not found</string>
+    <string name="product_photo">Product Photo</string>
+    <string name="back_to_dashboard">Back to Dashboard</string>
+
+    <!-- Scan History Screen -->
+    <string name="scan_history_title">Scan History</string>
+    <string name="no_scan_history">No scan history found</string>
+    <string name="date_today">TODAY</string>
+    <string name="date_yesterday">YESTERDAY</string>
+    <string name="gemma_insight_card_text">You\'ve scanned %1$d items in total. %2$d%% of your choices were safe for your profile. %3$s</string>
+    <string name="great_job">Great job!</string>
+    <string name="stay_cautious">Stay cautious!</string>
 </resources>

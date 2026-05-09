@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -31,6 +32,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.shopwise.R
+import com.shopwise.core.UserPreferences
 import com.shopwise.ui.navigation.Routes
 import com.shopwise.ui.theme.PrimaryColor
 import compose.icons.EvaIcons
@@ -51,11 +53,20 @@ fun DetailResultScreen(
     var tts by remember { mutableStateOf<TextToSpeech?>(null) }
     var isSpeaking by remember { mutableStateOf(false) }
 
+    val userPreferences = remember { UserPreferences(context) }
+    val language = remember { userPreferences.getLanguage() ?: "en" }
+
     // Initialize TTS
     LaunchedEffect(Unit) {
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale("id", "ID")
+                // Set language based on app preference
+                if (language == "in") {
+                    tts?.language = Locale("id", "ID")
+                } else {
+                    tts?.language = Locale.US
+                }
+                
                 tts?.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
                     override fun onStart(utteranceId: String?) { isSpeaking = true }
                     override fun onDone(utteranceId: String?) { isSpeaking = false }
@@ -85,7 +96,7 @@ fun DetailResultScreen(
         }
     } else if (scan == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Analysis record not found", color = Color.Gray)
+            Text(stringResource(R.string.analysis_record_not_found), color = Color.Gray)
         }
     } else {
         DetailResultContent(
@@ -95,7 +106,8 @@ fun DetailResultScreen(
             analysisResult = scan.finalResult,
             imageUri = scan.imageUri,
             tts = tts,
-            isSpeaking = isSpeaking
+            isSpeaking = isSpeaking,
+            language = language
         )
     }
 }
@@ -109,12 +121,18 @@ fun DetailResultContent(
     analysisResult: String,
     imageUri: String?,
     tts: TextToSpeech?,
-    isSpeaking: Boolean
+    isSpeaking: Boolean,
+    language: String
 ) {
     val scrollState = rememberScrollState()
 
     fun speak(text: String) {
         val cleanText = text.replace("*", "")
+        if (language == "in") {
+            tts?.setLanguage(Locale("id", "ID"))
+        } else {
+            tts?.setLanguage(Locale.US)
+        }
         tts?.speak(cleanText, TextToSpeech.QUEUE_FLUSH, null, "detail_utterance")
     }
 
@@ -123,7 +141,7 @@ fun DetailResultContent(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        "ShopWise",
+                        stringResource(R.string.app_name),
                         fontWeight = FontWeight.Bold,
                         color = PrimaryColor,
                         fontSize = 20.sp
@@ -133,8 +151,7 @@ fun DetailResultContent(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            modifier = Modifier.size(24.dp).padding(4.dp),
+                            contentDescription = stringResource(R.string.back),
                             tint = PrimaryColor
                         )
                     }
@@ -184,13 +201,13 @@ fun DetailResultContent(
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = if (isSafe) "SAFE" else "DANGER",
+                        text = if (isSafe) stringResource(R.string.status_safe) else stringResource(R.string.status_danger),
                         fontSize = 32.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.White
                     )
                     Text(
-                        text = if (isSafe) "NO ALLERGENS DETECTED" else "SEVERE ALLERGEN DETECTED",
+                        text = if (isSafe) stringResource(R.string.no_allergens_detected) else stringResource(R.string.severe_allergen_detected),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White.copy(alpha = 0.8f)
@@ -203,7 +220,7 @@ fun DetailResultContent(
                         shape = RoundedCornerShape(24.dp)
                     ) {
                         Text(
-                            text = "Product Analysis Result",
+                            text = productName.uppercase(),
                             modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
                             textAlign = TextAlign.Center,
                             fontWeight = FontWeight.Bold,
@@ -235,7 +252,7 @@ fun DetailResultContent(
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                "AI Safety Analysis",
+                                stringResource(R.string.ai_safety_analysis),
                                 fontWeight = FontWeight.Bold,
                                 color = boxTextColor,
                                 fontSize = 24.sp
@@ -278,7 +295,7 @@ fun DetailResultContent(
 
             // Photo Preview
             if (!imageUri.isNullOrEmpty()) {
-                Text("Product Photo", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
+                Text(stringResource(R.string.product_photo), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
                 Spacer(modifier = Modifier.height(8.dp))
                 AsyncImage(
                     model = Uri.parse(imageUri),
@@ -302,7 +319,7 @@ fun DetailResultContent(
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Back to Dashboard", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.back_to_dashboard), fontWeight = FontWeight.Bold)
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -318,7 +335,7 @@ fun DetailResultContent(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Ask Gemma for Details", color = Color(0xFF0277BD))
+                        Text(stringResource(R.string.ask_gemma_details), color = Color(0xFF0277BD))
                     }
                 }
             }
