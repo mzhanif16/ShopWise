@@ -17,6 +17,7 @@ import androidx.navigation.navArgument
 import com.shopwise.ui.MainViewModel
 import com.shopwise.ui.screen.chat.ChatScreen
 import com.shopwise.ui.screen.home.DashboardScreen
+import com.shopwise.ui.screen.language.LanguageSelectionScreen
 import com.shopwise.ui.screen.onboarding.OnBoardingScreen
 import com.shopwise.ui.screen.scan.AnalysisResultScreen
 import com.shopwise.ui.screen.scan.CameraScreen
@@ -26,6 +27,7 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 
 object Routes {
+    const val LANGUAGE_SELECTION = "language_selection"
     const val ONBOARDING = "onboarding"
     const val DASHBOARD = "dashboard"
     const val ALLERGY_PROFILE = "allergy_profile"
@@ -75,6 +77,9 @@ fun AppNavHost() {
             ) + fadeOut(animationSpec = tween(400))
         }
     ) {
+        composable(Routes.LANGUAGE_SELECTION) {
+            LanguageSelectionScreen(navController)
+        }
 
         composable(Routes.ONBOARDING) {
             OnBoardingScreen(navController)

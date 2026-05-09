@@ -48,11 +48,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.shopwise.R
 import com.shopwise.core.UserPreferences
 import com.shopwise.ui.navigation.Routes
 import com.shopwise.ui.theme.PrimaryColor
@@ -80,11 +82,17 @@ fun OnBoardingScreen(navController: NavController) {
     var birthDate by rememberSaveable { mutableStateOf("") }
     var height by rememberSaveable { mutableStateOf("172") }
     var weight by rememberSaveable { mutableStateOf("64") }
-    var selectedGender by rememberSaveable { mutableStateOf("Female") }
+    
+    // Default genders use strings.xml values
+    val femaleStr = stringResource(R.string.gender_female)
+    val maleStr = stringResource(R.string.gender_male)
+    var selectedGender by rememberSaveable { mutableStateOf(femaleStr) }
 
     // Hoisting State Page 2
     var allergySearch by rememberSaveable { mutableStateOf("") }
-    var selectedAllergies by remember { mutableStateOf(setOf("Peanuts", "Dairy")) }
+    val peanutStr = stringResource(R.string.allergen_peanuts)
+    val dairyStr = stringResource(R.string.allergen_dairy)
+    var selectedAllergies by remember { mutableStateOf(setOf(peanutStr, dairyStr)) }
 
     // Hoisting State Page 3
     var selectedModel by rememberSaveable { mutableStateOf("4B") }
@@ -184,7 +192,6 @@ fun OnBoardingScreen(navController: NavController) {
                         }
                     )
                     2 -> OnBoardingPage3(
-                        scrollState = scrollState3,
                         selectedModel = selectedModel,
                         onModelSelected = { selectedModel = it },
                         gemmaViewModel = gemmaViewModel
@@ -247,7 +254,13 @@ fun OnBoardingScreen(navController: NavController) {
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
                         ) {
-                            val buttonText = if (pagerState.currentPage < 2) "Continue" else if (isModelReady) "Get Started" else "Waiting for Download..."
+                            val buttonText = if (pagerState.currentPage < 2) {
+                                stringResource(R.string.continue_button)
+                            } else if (isModelReady) {
+                                stringResource(R.string.get_started_button)
+                            } else {
+                                stringResource(R.string.waiting_download)
+                            }
                             Text(buttonText, color = if (buttonEnabled) Color.White else Color.Gray, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                             Spacer(modifier = Modifier.width(8.dp))
                             Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = if (buttonEnabled) Color.White else Color.Gray)
@@ -257,7 +270,7 @@ fun OnBoardingScreen(navController: NavController) {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = "STEP ${pagerState.currentPage + 1} OF 3",
+                        text = stringResource(R.string.step_indicator, pagerState.currentPage + 1),
                         color = Color.Gray,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold

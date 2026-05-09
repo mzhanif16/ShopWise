@@ -1,7 +1,6 @@
 package com.shopwise.ui.screen.onboarding
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -40,8 +39,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -49,17 +48,12 @@ import androidx.compose.ui.unit.sp
 import com.shopwise.R
 import com.shopwise.ui.theme.PrimaryColor
 import compose.icons.EvaIcons
-import compose.icons.SimpleIcons
 import compose.icons.evaicons.Fill
-import compose.icons.evaicons.Outline
 import compose.icons.evaicons.fill.CloudUpload
 import compose.icons.evaicons.fill.Download
-import compose.icons.evaicons.outline.Cast
-import compose.icons.evaicons.outline.CloudUpload
 
 @Composable
 fun OnBoardingPage3(
-    scrollState: ScrollState,
     selectedModel: String,
     onModelSelected: (String) -> Unit,
     gemmaViewModel: GemmaViewModel
@@ -72,12 +66,12 @@ fun OnBoardingPage3(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 24.dp)
-            .verticalScroll(scrollState)
+            .verticalScroll(androidx.compose.foundation.rememberScrollState())
     ) {
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "Model Brain Setup",
+            text = stringResource(R.string.model_brain_setup),
             color = Color.Black,
             fontWeight = FontWeight.Bold,
             fontSize = 32.sp
@@ -86,7 +80,7 @@ fun OnBoardingPage3(
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "Choose your intelligence level. Gemma runs locally on your device for maximum privacy.",
+            text = stringResource(R.string.page3_desc),
             color = Color.Gray,
             fontSize = 16.sp,
             lineHeight = 24.sp
@@ -97,11 +91,11 @@ fun OnBoardingPage3(
         // Model 4B Card
         model4B?.let { model ->
             ModelSelectionCard(
-                title = "Gemma 4B (Advanced & Deep)",
-                description = "Unmatched clinical precision. Detects complex allergen cross-contaminations and nutritional nuances.",
-                storage = "3.65GB Storage",
+                title = stringResource(R.string.model_4b_title),
+                description = stringResource(R.string.model_4b_desc),
+                storage = stringResource(R.string.storage_suffix, "3.65GB"),
                 icon = painterResource(R.drawable.img_e4b),
-                badgeText = "RECOMMENDED",
+                badgeText = stringResource(R.string.recommended_badge),
                 isSelected = selectedModel == "4B",
                 isDownloaded = model.isDownloaded,
                 isDownloading = model.isDownloading,
@@ -116,11 +110,11 @@ fun OnBoardingPage3(
         // Model 2B Card
         model2B?.let { model ->
             ModelSelectionCard(
-                title = "Gemma 2B (Lite & Fast)",
-                description = "Lightning quick scans for essential allergen detection. Perfect for newer hardware.",
-                storage = "2.58GB Storage",
+                title = stringResource(R.string.model_2b_title),
+                description = stringResource(R.string.model_2b_desc),
+                storage = stringResource(R.string.storage_suffix, "2.58GB"),
                 icon = painterResource(R.drawable.img_e2b),
-                badgeText = "EFFICIENT",
+                badgeText = stringResource(R.string.efficient_badge),
                 isSelected = selectedModel == "2B",
                 isDownloaded = model.isDownloaded,
                 isDownloading = model.isDownloading,
@@ -281,7 +275,7 @@ fun ModelSelectionCard(
                     } else {
                         Button(
                             onClick = onDownloadClick,
-                            enabled = isSelected, // Hanya bisa di klik jika card terpilih
+                            enabled = isSelected,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = PrimaryColor,
                                 disabledContainerColor = Color.LightGray.copy(alpha = 0.5f)
@@ -298,7 +292,7 @@ fun ModelSelectionCard(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    "Download",
+                                    text = stringResource(R.string.download_button),
                                     fontSize = 12.sp,
                                     color = if (isSelected) Color.White else Color.Gray
                                 )
@@ -309,7 +303,7 @@ fun ModelSelectionCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Ready", color = Color(0xFF4CAF50), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.ready_status), color = Color(0xFF4CAF50), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -341,7 +335,6 @@ fun SyncingProgressBox(
                 modifier = Modifier.size(160.dp),
                 contentAlignment = Alignment.Center
             ) {
-                // Background glossy circle (blue gradient) in the center
                 Box(
                     modifier = Modifier
                         .size(110.dp)
@@ -353,7 +346,6 @@ fun SyncingProgressBox(
                         )
                 )
                 
-                // The progress indicator with track color and thickness
                 CircularProgressIndicator(
                     progress = { if (isDownloading) progress else 0f },
                     modifier = Modifier.fillMaxSize(),
@@ -372,7 +364,7 @@ fun SyncingProgressBox(
                         color = Color.Black
                     )
                     Text(
-                        text = if (isDownloading) "DOWNLOADING" else "WAITING",
+                        text = if (isDownloading) stringResource(R.string.downloading_status) else stringResource(R.string.waiting_status),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.Gray
@@ -411,7 +403,7 @@ fun SyncingProgressBox(
                 )
             } else {
                 Text(
-                    text = "Gemma is learning your health\nprofile...",
+                    text = stringResource(R.string.gemma_learning),
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     color = Color.Black,
@@ -441,7 +433,7 @@ fun SyncingProgressBox(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = if (isDownloading) "Downloading intelligence weights" else "Optimizing clinical weights",
+                    text = if (isDownloading) stringResource(R.string.downloading_weights) else stringResource(R.string.optimizing_weights),
                     color = Color.Gray,
                     fontSize = 14.sp
                 )

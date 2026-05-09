@@ -17,6 +17,7 @@ class UserPreferences(context: Context) {
         private const val KEY_ALLERGIES = "allergies"
         private const val KEY_SELECTED_MODEL = "selected_model"
         private const val KEY_IS_ONBOARDED = "is_onboarded"
+        private const val KEY_LANGUAGE = "language"
     }
 
     fun saveUserData(
@@ -42,6 +43,12 @@ class UserPreferences(context: Context) {
     fun setOnboarded(value: Boolean) {
         sharedPreferences.edit { putBoolean(KEY_IS_ONBOARDED, value) }
     }
+
+    fun setLanguage(language: String) {
+        sharedPreferences.edit { putString(KEY_LANGUAGE, language) }
+    }
+
+    fun getLanguage(): String? = sharedPreferences.getString(KEY_LANGUAGE, null)
 
     fun getUserData(): Map<String, Any?> {
         return mapOf(

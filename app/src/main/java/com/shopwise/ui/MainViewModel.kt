@@ -9,6 +9,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val userPreferences = UserPreferences(application)
 
     fun getStartDestination(): String {
+        val language = userPreferences.getLanguage()
+        if (language == null) {
+            return Routes.LANGUAGE_SELECTION
+        }
+        
         return if (userPreferences.isOnboarded()) {
             Routes.DASHBOARD
         } else {

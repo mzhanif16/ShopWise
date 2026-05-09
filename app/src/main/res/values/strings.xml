@@ -1,3 +1,66 @@
 <resources>
     <string name="app_name">ShopWise</string>
+    
+    <!-- Onboarding Page 1 -->
+    <string name="tell_us_about">Tell us about</string>
+    <string name="yourself">yourself</string>
+    <string name="page1_desc">This helps our clinical AI tailor health insights and allergen warnings specifically for you.</string>
+    <string name="full_name_label">FULL NAME</string>
+    <string name="full_name_placeholder">e.g. Julianne Smith</string>
+    <string name="gender_label">GENDER</string>
+    <string name="gender_female">Female</string>
+    <string name="gender_male">Male</string>
+    <string name="birth_date_label">BIRTH DATE</string>
+    <string name="birth_date_placeholder">March 24, 1995</string>
+    <string name="height_label">HEIGHT</string>
+    <string name="weight_label">WEIGHT</string>
+    <string name="info_box_text">We encrypt this data locally. It\'s only used to cross-reference with ingredients during your scans.</string>
+    <string name="select_height_title">Select Height</string>
+    <string name="select_weight_title">Select Weight</string>
+
+    <!-- Onboarding Page 2 -->
+    <string name="personalization">PERSONALIZATION</string>
+    <string name="allergy_profile">Allergy Profile</string>
+    <string name="page2_desc">Configure your clinical safeguards. We\'ll cross-reference these during every scan.</string>
+    <string name="search_add_custom">SEARCH OR ADD CUSTOM</string>
+    <string name="search_placeholder">Search allergens (e.g. Sesame)</string>
+    <string name="add_to_profile">Add \"%1$s\" to profile</string>
+    <string name="common_triggers">Common Clinical Triggers</string>
+    <string name="gemma_insight_title">GEMMA INSIGHT</string>
+    <string name="gemma_insight_desc">Based on your profile, I\'ll prioritize identifying \"Cross-Contamination\" warnings in snack aisle products.</string>
+    
+    <!-- Common Allergens English -->
+    <string name="allergen_peanuts">Peanuts</string>
+    <string name="allergen_eggs">Eggs</string>
+    <string name="allergen_dairy">Dairy</string>
+    <string name="allergen_gluten">Gluten</string>
+    <string name="allergen_shellfish">Shellfish</string>
+    <string name="allergen_soy">Soy</string>
+    <string name="allergen_tree_nuts">Tree Nuts</string>
+
+    <!-- Onboarding Page 3 -->
+    <string name="model_brain_setup">Model Brain Setup</string>
+    <string name="page3_desc">Choose your intelligence level. Gemma runs locally on your device for maximum privacy.</string>
+    <string name="model_4b_title">Gemma 4B (Advanced &amp; Deep)</string>
+    <string name="model_4b_desc">Unmatched clinical precision. Detects complex allergen cross-contaminations and nutritional nuances.</string>
+    <string name="model_2b_title">Gemma 2B (Lite &amp; Fast)</string>
+    <string name="model_2b_desc">Lightning quick scans for essential allergen detection. Perfect for newer hardware.</string>
+    <string name="storage_suffix">%1$s Storage</string>
+    <string name="recommended_badge">RECOMMENDED</string>
+    <string name="efficient_badge">EFFICIENT</string>
+    <string name="download_button">Download</string>
+    <string name="ready_status">Ready</string>
+    <string name="downloading_status">DOWNLOADING</string>
+    <string name="waiting_status">WAITING</string>
+    <string name="downloading_weights">Downloading intelligence weights</string>
+    <string name="optimizing_weights">Optimizing clinical weights</string>
+    <string name="gemma_learning">Gemma is learning your health profile...</string>
+
+    <!-- General / Navigation -->
+    <string name="continue_button">Continue</string>
+    <string name="get_started_button">Get Started</string>
+    <string name="waiting_download">Waiting for Download...</string>
+    <string name="step_indicator">STEP %1$d OF 3</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
 </resources>

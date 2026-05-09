@@ -38,12 +38,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shopwise.R
 import com.shopwise.common.utils.CustomTextField
 import com.shopwise.common.utils.SectionLabel
 import com.shopwise.ui.theme.PrimaryColor
@@ -59,13 +61,13 @@ fun OnBoardingPage2(
     onAllergyToggle: (String) -> Unit
 ) {
     val commonAllergens = listOf(
-        "Peanuts" to Icons.Default.Info,
-        "Eggs" to Icons.Default.Info,
-        "Dairy" to Icons.Default.Info,
-        "Gluten" to Icons.Default.Info,
-        "Shellfish" to Icons.Default.Info,
-        "Soy" to Icons.Default.Info,
-        "Tree Nuts" to Icons.Default.Info
+        stringResource(R.string.allergen_peanuts) to Icons.Default.Info,
+        stringResource(R.string.allergen_eggs) to Icons.Default.Info,
+        stringResource(R.string.allergen_dairy) to Icons.Default.Info,
+        stringResource(R.string.allergen_gluten) to Icons.Default.Info,
+        stringResource(R.string.allergen_shellfish) to Icons.Default.Info,
+        stringResource(R.string.allergen_soy) to Icons.Default.Info,
+        stringResource(R.string.allergen_tree_nuts) to Icons.Default.Info
     )
 
     Column(
@@ -77,14 +79,14 @@ fun OnBoardingPage2(
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "PERSONALIZATION",
+            text = stringResource(R.string.personalization),
             color = Color(0xFF3277D8),
             fontWeight = FontWeight.Bold,
             fontSize = 12.sp
         )
 
         Text(
-            text = "Allergy Profile",
+            text = stringResource(R.string.allergy_profile),
             color = Color.Black,
             fontWeight = FontWeight.Bold,
             fontSize = 32.sp
@@ -93,7 +95,7 @@ fun OnBoardingPage2(
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "Configure your clinical safeguards. We'll cross-reference these during every scan.",
+            text = stringResource(R.string.page2_desc),
             color = Color.Gray,
             fontSize = 16.sp,
             lineHeight = 24.sp
@@ -101,14 +103,14 @@ fun OnBoardingPage2(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        SectionLabel("SEARCH OR ADD CUSTOM")
+        SectionLabel(stringResource(R.string.search_add_custom))
 
         // Custom search dengan penambahan alergi kustom
         Column {
             CustomTextField(
                 value = searchQuery,
                 onValueChange = onSearchChange,
-                placeholder = "Search allergens (e.g. Sesame)",
+                placeholder = stringResource(R.string.search_placeholder),
                 trailingIcon = {
                     Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray)
                 }
@@ -139,13 +141,7 @@ fun OnBoardingPage2(
                         Icon(Icons.Default.Add, contentDescription = null, tint = PrimaryColor)
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = buildAnnotatedString {
-                                append("Add \"")
-                                withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                    append(searchQuery)
-                                }
-                                append("\" to profile")
-                            },
+                            text = stringResource(R.string.add_to_profile, searchQuery),
                             fontSize = 14.sp
                         )
                     }
@@ -156,7 +152,7 @@ fun OnBoardingPage2(
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "Common Clinical Triggers",
+            text = stringResource(R.string.common_triggers),
             fontWeight = FontWeight.Bold,
             fontSize = 16.sp,
             color = Color.Black
@@ -263,13 +259,13 @@ fun InsightBox() {
             Spacer(modifier = Modifier.width(16.dp))
             Column {
                 Text(
-                    text = "GEMMA INSIGHT",
+                    text = stringResource(R.string.gemma_insight_title),
                     color = Color(0xFF01579B),
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
                 )
                 Text(
-                    text = "Based on your profile, I'll prioritize identifying \"Cross-Contamination\" warnings in snack aisle products.",
+                    text = stringResource(R.string.gemma_insight_desc),
                     color = Color(0xFF01579B),
                     fontSize = 12.sp,
                     lineHeight = 18.sp

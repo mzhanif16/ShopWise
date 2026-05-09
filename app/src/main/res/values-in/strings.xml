@@ -1,0 +1,66 @@
+<resources>
+    <string name="app_name">ShopWise</string>
+    
+    <!-- Onboarding Page 1 -->
+    <string name="tell_us_about">Ceritakan tentang</string>
+    <string name="yourself">diri Anda</string>
+    <string name="page1_desc">Ini membantu AI klinis kami menyesuaikan wawasan kesehatan dan peringatan alergi khusus untuk Anda.</string>
+    <string name="full_name_label">NAMA LENGKAP</string>
+    <string name="full_name_placeholder">misal: Julianne Smith</string>
+    <string name="gender_label">JENIS KELAMIN</string>
+    <string name="gender_female">Perempuan</string>
+    <string name="gender_male">Laki-laki</string>
+    <string name="birth_date_label">TANGGAL LAHIR</string>
+    <string name="birth_date_placeholder">24 Maret 1995</string>
+    <string name="height_label">TINGGI</string>
+    <string name="weight_label">BERAT</string>
+    <string name="info_box_text">Kami mengenkripsi data ini secara lokal. Data ini hanya digunakan untuk mencocokkan bahan selama pemindaian Anda.</string>
+    <string name="select_height_title">Pilih Tinggi Badan</string>
+    <string name="select_weight_title">Pilih Berat Badan</string>
+
+    <!-- Onboarding Page 2 -->
+    <string name="personalization">PERSONALISASI</string>
+    <string name="allergy_profile">Profil Alergi</string>
+    <string name="page2_desc">Konfigurasikan perlindungan klinis Anda. Kami akan mencocokkan ini selama setiap pemindaian.</string>
+    <string name="search_add_custom">CARI ATAU TAMBAH KUSTOM</string>
+    <string name="search_placeholder">Cari alergen (misal: Wijen)</string>
+    <string name="add_to_profile">Tambah \"%1$s\" ke profil</string>
+    <string name="common_triggers">Pemicu Klinis Umum</string>
+    <string name="gemma_insight_title">WAWASAN GEMMA</string>
+    <string name="gemma_insight_desc">Berdasarkan profil Anda, saya akan memprioritaskan mengidentifikasi peringatan \"Kontaminasi Silang\" pada produk camilan.</string>
+    
+    <!-- Common Allergens Indonesian -->
+    <string name="allergen_peanuts">Kacang</string>
+    <string name="allergen_eggs">Telur</string>
+    <string name="allergen_dairy">Susu</string>
+    <string name="allergen_gluten">Gluten</string>
+    <string name="allergen_shellfish">Kerang</string>
+    <string name="allergen_soy">Kedelai</string>
+    <string name="allergen_tree_nuts">Kacang Pohon</string>
+
+    <!-- Onboarding Page 3 -->
+    <string name="model_brain_setup">Pengaturan Otak Model</string>
+    <string name="page3_desc">Pilih tingkat kecerdasan Anda. Gemma berjalan secara lokal di perangkat Anda untuk privasi maksimal.</string>
+    <string name="model_4b_title">Gemma 4B (Lanjutan &amp; Mendalam)</string>
+    <string name="model_4b_desc">Presisi klinis yang tak tertandingi. Mendeteksi kontaminasi silang alergen yang kompleks dan nuansa nutrisi.</string>
+    <string name="model_2b_title">Gemma 2B (Ringan &amp; Cepat)</string>
+    <string name="model_2b_desc">Pemindaian cepat kilat untuk deteksi alergen esensial. Sempurna untuk perangkat keras yang lebih baru.</string>
+    <string name="storage_suffix">Penyimpanan %1$s</string>
+    <string name="recommended_badge">DIREKOMENDASIKAN</string>
+    <string name="efficient_badge">EFISIEN</string>
+    <string name="download_button">Unduh</string>
+    <string name="ready_status">Siap</string>
+    <string name="downloading_status">MENGUNDUH</string>
+    <string name="waiting_status">MENUNGGU</string>
+    <string name="downloading_weights">Mengunduh bobot kecerdasan</string>
+    <string name="optimizing_weights">Mengoptimalkan bobot klinis</string>
+    <string name="gemma_learning">Gemma sedang mempelajari profil kesehatan Anda...</string>
+
+    <!-- General / Navigation -->
+    <string name="continue_button">Lanjutkan</string>
+    <string name="get_started_button">Mulai Sekarang</string>
+    <string name="waiting_download">Menunggu Unduhan...</string>
+    <string name="step_indicator">LANGKAH %1$d DARI 3</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Batal</string>
+</resources>

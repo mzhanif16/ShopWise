@@ -40,12 +40,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shopwise.R
 import com.shopwise.common.utils.CustomTextField
 import com.shopwise.common.utils.SectionLabel
 import com.shopwise.ui.theme.PrimaryColor
@@ -81,17 +83,18 @@ fun OnBoardingPage1(
             confirmButton = {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { millis ->
+                        // Format is generally locale-dependent, but for display we can use a standard one or localized
                         val sdf = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault())
                         onBirthDateChange(sdf.format(Date(millis)))
                     }
                     showDatePicker = false
                 }) {
-                    Text("OK", color = PrimaryColor)
+                    Text(stringResource(R.string.ok), color = PrimaryColor)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         ) {
@@ -101,7 +104,7 @@ fun OnBoardingPage1(
 
     if (showHeightDialog) {
         SelectionDialog(
-            title = "Select Height",
+            title = stringResource(R.string.select_height_title),
             unit = "cm",
             currentValue = height.toIntOrNull() ?: 170,
             range = 100..250,
@@ -115,7 +118,7 @@ fun OnBoardingPage1(
 
     if (showWeightDialog) {
         SelectionDialog(
-            title = "Select Weight",
+            title = stringResource(R.string.select_weight_title),
             unit = "kg",
             currentValue = weight.toIntOrNull() ?: 60,
             range = 30..200,
@@ -138,10 +141,11 @@ fun OnBoardingPage1(
         Text(
             text = buildAnnotatedString {
                 withStyle(style = SpanStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 32.sp)) {
-                    append("Tell us about\n")
+                    append(stringResource(R.string.tell_us_about))
+                    append("\n")
                 }
                 withStyle(style = SpanStyle(color = PrimaryColor, fontWeight = FontWeight.Bold, fontSize = 32.sp)) {
-                    append("yourself")
+                    append(stringResource(R.string.yourself))
                 }
             },
             lineHeight = 40.sp
@@ -150,7 +154,7 @@ fun OnBoardingPage1(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "This helps our clinical AI tailor health insights and allergen warnings specifically for you.",
+            text = stringResource(R.string.page1_desc),
             color = Color.Gray,
             fontSize = 16.sp,
             lineHeight = 24.sp
@@ -158,16 +162,16 @@ fun OnBoardingPage1(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        SectionLabel("FULL NAME")
+        SectionLabel(stringResource(R.string.full_name_label))
         CustomTextField(
             value = fullName,
             onValueChange = onFullNameChange,
-            placeholder = "e.g. Julianne Smith"
+            placeholder = stringResource(R.string.full_name_placeholder)
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        SectionLabel("GENDER")
+        SectionLabel(stringResource(R.string.gender_label))
         GenderSelector(
             selectedGender = selectedGender,
             onGenderSelected = onGenderChange
@@ -175,11 +179,11 @@ fun OnBoardingPage1(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        SectionLabel("BIRTH DATE")
+        SectionLabel(stringResource(R.string.birth_date_label))
         CustomTextField(
             value = birthDate,
             onValueChange = { },
-            placeholder = "March 24, 1995",
+            placeholder = stringResource(R.string.birth_date_placeholder),
             enabled = false,
             modifier = Modifier.clickable { showDatePicker = true },
             trailingIcon = {
@@ -191,13 +195,13 @@ fun OnBoardingPage1(
 
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             InfoCard(
-                label = "HEIGHT",
+                label = stringResource(R.string.height_label),
                 value = height,
                 unit = "cm",
                 modifier = Modifier.weight(1f).clickable { showHeightDialog = true }
             )
             InfoCard(
-                label = "WEIGHT",
+                label = stringResource(R.string.weight_label),
                 value = weight,
                 unit = "kg",
                 modifier = Modifier.weight(1f).clickable { showWeightDialog = true }
@@ -251,7 +255,7 @@ fun SelectionDialog(
         confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         }
     )
@@ -275,7 +279,7 @@ fun InfoBox() {
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = "We encrypt this data locally. It's only used to cross-reference with ingredients during your scans.",
+                text = stringResource(R.string.info_box_text),
                 color = Color(0xFF3277D8),
                 fontSize = 12.sp,
                 lineHeight = 18.sp,
@@ -328,6 +332,7 @@ fun GenderSelector(
     selectedGender: String,
     onGenderSelected: (String) -> Unit
 ) {
+    val genders = listOf(stringResource(R.string.gender_female), stringResource(R.string.gender_male))
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -336,7 +341,7 @@ fun GenderSelector(
             .padding(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        listOf("Female", "Male").forEach { gender ->
+        genders.forEach { gender ->
             val isSelected = selectedGender == gender
             Box(
                 modifier = Modifier
