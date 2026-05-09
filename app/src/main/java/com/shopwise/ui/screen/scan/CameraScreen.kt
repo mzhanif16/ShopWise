@@ -63,6 +63,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -181,13 +182,13 @@ fun CameraScreen(navController: NavController) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.White)
                 }
-                Text("Health Guardian", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.camera_title), color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 IconButton(onClick = { isFlashOn = !isFlashOn }) {
                     Icon(
                         painter = painterResource(R.drawable.img_flash),
-                        contentDescription = "Flash",
+                        contentDescription = stringResource(R.string.flash),
                         tint = if (isFlashOn) Color.Yellow else Color.White
                     )
                 }
@@ -261,7 +262,7 @@ fun CameraScreen(navController: NavController) {
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(painterResource(R.drawable.img_gallery), contentDescription = "Gallery", tint = Color.White)
+                        Icon(painterResource(R.drawable.img_gallery), contentDescription = stringResource(R.string.gallery), tint = Color.White)
                     }
 
                     // Shutter Button
@@ -305,7 +306,7 @@ fun CameraScreen(navController: NavController) {
                                 },
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Done, contentDescription = "Done", tint = Color.White)
+                            Icon(Icons.Default.Done, contentDescription = null, tint = Color.White)
                         }
                     } else {
                         Box(
@@ -321,21 +322,21 @@ fun CameraScreen(navController: NavController) {
                                 },
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(painter = painterResource(id = R.drawable.img_flip), contentDescription = "Flip", tint = Color.White)
+                            Icon(painter = painterResource(id = R.drawable.img_flip), contentDescription = stringResource(R.string.flip), tint = Color.White)
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
                 Text(
-                    text = if (selectedUris.isEmpty()) "CAPTURE LABEL FOR ANALYSIS" else "${selectedUris.size} IMAGES READY", 
+                    text = if (selectedUris.isEmpty()) stringResource(R.string.capture_label) else stringResource(R.string.images_ready, selectedUris.size), 
                     color = Color.White, 
                     fontSize = 14.sp, 
                     fontWeight = FontWeight.Bold, 
                     letterSpacing = 1.sp
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("Place ingredients clearly in view", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp, textAlign = TextAlign.Center)
+                Text(stringResource(R.string.camera_desc), color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp, textAlign = TextAlign.Center)
             }
         }
     } else {
@@ -343,10 +344,10 @@ fun CameraScreen(navController: NavController) {
             .fillMaxSize()
             .background(Color.Black), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Camera permission is required", color = Color.White)
+                Text(stringResource(R.string.camera_permission_required), color = Color.White)
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }) {
-                    Text("Grant Permission")
+                    Text(stringResource(R.string.grant_permission))
                 }
             }
         }

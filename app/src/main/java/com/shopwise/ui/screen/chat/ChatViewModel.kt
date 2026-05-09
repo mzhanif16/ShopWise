@@ -100,7 +100,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         val allergies = (userData["allergies"] as? Set<*>)?.joinToString(", ") ?: "None"
         val language = userPreferences.getLanguage() ?: "en"
 
-        // Instruksi sistem agar AI menjawab dalam bahasa yang dipilih
+        // Sesuaikan instruksi sistem berdasarkan bahasa agar AI merespon dalam bahasa yang sama
         val systemPrompt = if (language == "in") {
             """
                 Anda adalah "ShopWise", asisten AI pakar nutrisi dan keamanan pangan.
@@ -147,8 +147,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         val outputStream = ByteArrayOutputStream()
         audioRecord?.startRecording()
         isRecording = true
-        // Instruksi sistem agar AI menjawab dalam bahasa yang dipilih
-
+        
         val userPreferences = UserPreferences(context)
         val userData = userPreferences.getUserData()
         val allergies = (userData["allergies"] as? Set<*>)?.joinToString(", ") ?: "None"
@@ -190,7 +189,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             if (pcmData.isNotEmpty()) {
                 val wavData = addWavHeader(pcmData, sampleRate)
                 withContext(Dispatchers.Main) {
-                    sendAudioMessage(wavData,systemPrompt)
+                    sendAudioMessage(wavData, systemPrompt)
                 }
             }
         }
@@ -200,7 +199,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         isRecording = false
     }
     
-    private fun sendAudioMessage(audioData: ByteArray,systemPrompt: String) {
+    private fun sendAudioMessage(audioData: ByteArray, systemPrompt: String) {
         messages.add(ChatMessage("Voice Message", true, isAudio = true))
         isSending = true
         isThinking = true

@@ -128,4 +128,15 @@
     <string name="chat_add_content">Tambah konten</string>
     <string name="chat_voice_input">Input suara</string>
     <string name="asisten_fisrt_chat">Halo! Saya sudah menganalisis profil alergi Anda. Ada yang bisa saya bantu dalam memilih produk belanjaan hari ini? Saya bisa memeriksa bahan-bahan tertentu atau kesesuaian dengan pola makan Anda.</string>
+
+    <!-- Camera Screen -->
+    <string name="camera_title">Penjaga Kesehatan</string>
+    <string name="capture_label">AMBIL GAMBAR UNTUK ANALISIS</string>
+    <string name="images_ready">%1$d GAMBAR SIAP</string>
+    <string name="camera_desc">Posisikan bahan makanan dengan jelas di layar</string>
+    <string name="camera_permission_required">Izin kamera diperlukan</string>
+    <string name="grant_permission">Berikan Izin</string>
+    <string name="flash">Flash</string>
+    <string name="gallery">Galeri</string>
+    <string name="flip">Balik</string>
 </resources>

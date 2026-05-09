@@ -63,6 +63,8 @@
     <string name="step_indicator">STEP %1$d OF 3</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
+    <string name="back">Back</string>
+    <string name="done">Done</string>
 
     <!-- Home Screen -->
     <string name="welcome_back">WELCOME BACK</string>
@@ -128,4 +130,15 @@
     <string name="chat_add_content">Add content</string>
     <string name="chat_voice_input">Voice input</string>
     <string name="asisten_fisrt_chat">Hello! I have analyzed your allergy profile. How can I help you navigate your grocery choices today? I can check for specific ingredients or dietary compatibility.</string>
+
+    <!-- Camera Screen -->
+    <string name="camera_title">Health Guardian</string>
+    <string name="capture_label">CAPTURE LABEL FOR ANALYSIS</string>
+    <string name="images_ready">%1$d IMAGES READY</string>
+    <string name="camera_desc">Place ingredients clearly in view</string>
+    <string name="camera_permission_required">Camera permission is required</string>
+    <string name="grant_permission">Grant Permission</string>
+    <string name="flash">Flash</string>
+    <string name="gallery">Gallery</string>
+    <string name="flip">Flip</string>
 </resources>
