@@ -299,7 +299,9 @@ fun CameraScreen(navController: NavController) {
                                         joinedUris,
                                         StandardCharsets.UTF_8.toString()
                                     )
-                                    navController.navigate("${Routes.ANALYSIS_RESULT}/$encodedUri")
+                                    navController.navigate("${Routes.ANALYSIS_RESULT}/$encodedUri"){
+                                        popUpTo(Routes.CAMERA) { inclusive = true }
+                                    }
                                 },
                             contentAlignment = Alignment.Center
                         ) {

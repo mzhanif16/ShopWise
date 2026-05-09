@@ -151,16 +151,14 @@ fun HomeScreen(
                     time = formatTimestamp(scan.timestamp),
                     status = if (scan.isSafe) "SAFE" else "ALERT",
                     statusColor = if (scan.isSafe) PrimaryColor else Color(0xFFB3261E),
-                    iconUri = scan.imageUri
+                    iconUri = scan.imageUri,
+                    onClick = {
+                        navController.navigate("${Routes.DETAIL_RESULT}/${scan.id}")
+                    }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
         }
-
-//        Spacer(modifier = Modifier.height(24.dp))
-//
-//        // Insight Row
-//        GemmaInsightRow()
 
         Spacer(modifier = Modifier.height(32.dp))
     }
@@ -382,9 +380,11 @@ fun RecentScanItem(
     time: String,
     status: String,
     statusColor: Color,
-    iconUri: String?
+    iconUri: String?,
+    onClick: () -> Unit = {}
 ) {
     Surface(
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         color = Color(0xFFF7F7F7)
@@ -453,52 +453,6 @@ fun RecentScanItem(
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun GemmaInsightRow() {
-    Surface(
-        onClick = { /* TODO */ },
-        modifier = Modifier.fillMaxWidth(),
-        color = Color.Transparent
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Surface(
-                shape = CircleShape,
-                color = Color(0xFFE3F2FD),
-                modifier = Modifier.size(40.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        painter = painterResource(R.drawable.img_brain),
-                        contentDescription = null,
-                        tint = Color(0xFF1E88E5),
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "GEMMA INSIGHT",
-                    color = Color(0xFF1E88E5),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "New nut-free alternatives found",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
-                )
-            }
-            Icon(
-                painter = painterResource(R.drawable.img_arrow_right),
-                contentDescription = null,
-                tint = Color.Gray,
-                modifier = Modifier.size(12.dp)
-            )
         }
     }
 }

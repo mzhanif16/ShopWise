@@ -13,6 +13,9 @@ interface ScanHistoryDao {
     @Query("SELECT * FROM ScanHistory ORDER BY timestamp DESC")
     fun getAllScans(): Flow<List<ScanHistory>>
 
+    @Query("SELECT * FROM ScanHistory WHERE id = :id LIMIT 1")
+    suspend fun getScanById(id: Int): ScanHistory?
+
     @Query("DELETE FROM ScanHistory")
     suspend fun clearHistory()
 }

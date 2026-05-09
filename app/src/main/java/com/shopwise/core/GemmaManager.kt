@@ -2,6 +2,7 @@ package com.shopwise.core
 
 
 import android.graphics.Bitmap
+import android.util.Log
 import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Content
 import com.google.ai.edge.litertlm.Conversation
@@ -32,7 +33,12 @@ class GemmaManager() {
     val partialResults: SharedFlow<Pair<String, Boolean>> = _partialResults
 
     fun initialize(modelPath: String) {
+        close()
         if (engine != null) return
+
+        // Cek apakah ini model 4B (multimodal) atau 2B (text-only) berdasarkan nama file
+        val isMultimodal = modelPath.contains("4b", ignoreCase = true)
+        Log.d("GemmaManager", "Initializing model: $modelPath, isMultimodal: $isMultimodal")
 
         val engineConfig = EngineConfig(
             modelPath = modelPath,
@@ -41,11 +47,16 @@ class GemmaManager() {
             audioBackend = Backend.CPU()
         )
 
-        engine = Engine(engineConfig).apply {
-            initialize()
+        try {
+            engine = Engine(engineConfig).apply {
+                initialize()
+            }
+            conversation = engine?.createConversation()
+            Log.d("GemmaManager", "Engine initialized successfully")
+        } catch (e: Exception) {
+            Log.e("GemmaManager", "Failed to create engine", e)
+            throw e
         }
-
-        conversation = engine?.createConversation()
     }
 
     fun generateResponse(prompt: String, bitmaps: List<Bitmap>? = null, audioBytes: ByteArray? = null) {
@@ -56,12 +67,12 @@ class GemmaManager() {
             try {
                 val contents = mutableListOf<Content>()
 
-                // Tambahkan Audio jika ada
+                // Tambahkan Audio jika ada (hanya jika model mendukung/multimodal)
                 audioBytes?.let {
                     contents.add(Content.AudioBytes(it))
                 }
 
-                // Tambahkan Gambar jika ada
+                // Tambahkan Gambar jika ada (hanya jika model mendukung/multimodal)
                 bitmaps?.forEach { bitmap ->
                     contents.add(Content.ImageBytes(bitmap.toPngByteArray()))
                 }
@@ -83,6 +94,7 @@ class GemmaManager() {
                     isProcessing = false
                 }
             } catch (e: Exception) {
+                Log.e("GemmaManager", "Generation failed", e)
                 _partialResults.tryEmit(Pair("Error: ${e.message}", true))
                 isProcessing = false
             }

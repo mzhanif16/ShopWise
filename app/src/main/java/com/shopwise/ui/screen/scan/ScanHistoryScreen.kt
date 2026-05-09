@@ -28,6 +28,7 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.shopwise.R
 import com.shopwise.core.database.ScanHistory
+import com.shopwise.ui.navigation.Routes
 import com.shopwise.ui.theme.PrimaryColor
 import java.text.SimpleDateFormat
 import java.util.*
@@ -96,7 +97,10 @@ fun ScanHistoryScreen(
                             status = if (scan.isSafe) "SAFE" else "ALERT",
                             statusColor = if (scan.isSafe) PrimaryColor else Color(0xFFB3261E),
                             imageUri = scan.imageUri,
-                            hasSideIndicator = !scan.isSafe
+                            hasSideIndicator = !scan.isSafe,
+                            onClick = {
+                                navController.navigate("${Routes.DETAIL_RESULT}/${scan.id}")
+                            }
                         )
                     }
                     item { Spacer(modifier = Modifier.height(16.dp)) }
@@ -158,7 +162,8 @@ fun HistoryItem(
     status: String,
     statusColor: Color,
     imageUri: String?,
-    hasSideIndicator: Boolean = false
+    hasSideIndicator: Boolean = false,
+    onClick: () -> Unit
 ) {
     // Log URI untuk debugging
     LaunchedEffect(imageUri) {
@@ -166,6 +171,7 @@ fun HistoryItem(
     }
 
     Surface(
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         color = Color.White,

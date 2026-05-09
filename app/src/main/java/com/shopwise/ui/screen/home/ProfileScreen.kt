@@ -2,26 +2,52 @@ package com.shopwise.ui.screen.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shopwise.R
 import com.shopwise.core.UserPreferences
 import com.shopwise.ui.theme.PrimaryColor
+import compose.icons.EvaIcons
+import compose.icons.evaicons.Outline
+import compose.icons.evaicons.outline.Calendar
 
 @Composable
 fun ProfileScreen() {
@@ -35,8 +61,8 @@ fun ProfileScreen() {
     var height by remember { mutableStateOf(userData["height"] as? String ?: "") }
     var weight by remember { mutableStateOf(userData["weight"] as? String ?: "") }
     val selectedModel = remember { userData["selectedModel"] as? String ?: "4B" }
-    
-    val allergies = remember { 
+
+    val allergies = remember {
         val set = userData["allergies"] as? Set<String> ?: emptySet()
         set.toMutableStateList()
     }
@@ -66,53 +92,18 @@ fun ProfileScreen() {
     ) {
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Profile Image Section
-        Box(contentAlignment = Alignment.BottomEnd) {
-            Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFE0E0E0)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null,
-                    modifier = Modifier.size(80.dp),
-                    tint = Color.Gray
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(PrimaryColor)
-                    .padding(6.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = "Edit Profile",
-                    tint = Color.White,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
         // Form Fields
         ProfileSectionLabel("FULL NAME")
-        ProfileTextField(value = fullName, onValueChange = { 
-            fullName = it 
+        ProfileTextField(value = fullName, onValueChange = {
+            fullName = it
             saveChanges()
         })
 
         Spacer(modifier = Modifier.height(24.dp))
 
         ProfileSectionLabel("GENDER")
-        ProfileGenderSelector(selectedGender = selectedGender, onGenderSelected = { 
-            selectedGender = it 
+        ProfileGenderSelector(selectedGender = selectedGender, onGenderSelected = {
+            selectedGender = it
             saveChanges()
         })
 
@@ -121,30 +112,35 @@ fun ProfileScreen() {
         ProfileSectionLabel("BIRTH DATE")
         ProfileTextField(
             value = birthDate,
-            onValueChange = { 
-                birthDate = it 
+            onValueChange = {
+                birthDate = it
                 saveChanges()
             },
-            leadingIcon = Icons.Default.Info,
-            trailingIcon = Icons.Default.Info
+            leadingIcon = EvaIcons.Outline.Calendar,
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
             Column(modifier = Modifier.weight(1f)) {
                 ProfileSectionLabel("HEIGHT (CM)")
-                ProfileTextField(value = height, onValueChange = { 
-                    height = it 
-                    saveChanges()
-                }, trailingIcon = Icons.Default.Info)
+                ProfileTextField(
+                    value = height,
+                    onValueChange = {
+                        height = it
+                        saveChanges()
+                    }
+                )
             }
             Column(modifier = Modifier.weight(1f)) {
                 ProfileSectionLabel("WEIGHT (KG)")
-                ProfileTextField(value = weight, onValueChange = { 
-                    weight = it 
+                ProfileTextField(value = weight, onValueChange = {
+                    weight = it
                     saveChanges()
-                }, trailingIcon = Icons.Default.Info)
+                })
             }
         }
 
@@ -182,7 +178,7 @@ fun ProfileScreen() {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             allergies.forEach { allergy ->
-                AllergyChip(name = allergy, onDelete = { 
+                AllergyChip(name = allergy, onDelete = {
                     allergies.remove(allergy)
                     saveChanges()
                 })
@@ -201,9 +197,9 @@ fun ProfileScreen() {
         ) {
             Row(verticalAlignment = Alignment.Top) {
                 Icon(
-                    imageVector = Icons.Default.Info,
+                    painter = painterResource(R.drawable.img_star),
                     contentDescription = null,
-                    tint = PrimaryColor,
+                    tint = Color(0xFF0D47A1),
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
@@ -211,7 +207,8 @@ fun ProfileScreen() {
                     text = "Gemma notes: Keeping your weight and allergies updated helps us provide more accurate safety insights during your scans.",
                     color = Color(0xFF0D47A1),
                     fontSize = 13.sp,
-                    lineHeight = 18.sp
+                    lineHeight = 18.sp,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }
@@ -297,7 +294,12 @@ fun ProfileTextField(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (leadingIcon != null) {
-                        Icon(leadingIcon, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(20.dp))
+                        Icon(
+                            leadingIcon,
+                            contentDescription = null,
+                            tint = Color.Gray,
+                            modifier = Modifier.size(20.dp)
+                        )
                         Spacer(modifier = Modifier.width(12.dp))
                     }
                     Box(modifier = Modifier.weight(1f)) {
@@ -305,7 +307,12 @@ fun ProfileTextField(
                         innerTextField()
                     }
                     if (trailingIcon != null) {
-                        Icon(trailingIcon, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(20.dp))
+                        Icon(
+                            trailingIcon,
+                            contentDescription = null,
+                            tint = Color.Gray,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
                 }
             }

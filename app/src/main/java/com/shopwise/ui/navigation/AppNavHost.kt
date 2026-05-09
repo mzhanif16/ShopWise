@@ -20,6 +20,7 @@ import com.shopwise.ui.screen.home.DashboardScreen
 import com.shopwise.ui.screen.onboarding.OnBoardingScreen
 import com.shopwise.ui.screen.scan.AnalysisResultScreen
 import com.shopwise.ui.screen.scan.CameraScreen
+import com.shopwise.ui.screen.scan.DetailResultScreen
 import com.shopwise.ui.screen.scan.ScanHistoryScreen
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
@@ -30,6 +31,8 @@ object Routes {
     const val ALLERGY_PROFILE = "allergy_profile"
     const val MODEL_SETUP = "model_setup"
     const val CHAT = "chat"
+    
+    const val DETAIL_RESULT = "detail"
     const val CAMERA = "camera"
     const val ANALYSIS_RESULT = "analysis_result"
     const val SCAN_HISTORY = "scan_history"
@@ -108,6 +111,14 @@ fun AppNavHost() {
 
         composable(Routes.CHAT) {
             ChatScreen(navController)
+        }
+
+        composable(
+            route = "${Routes.DETAIL_RESULT}/{scanId}",
+            arguments = listOf(navArgument("scanId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val scanId = backStackEntry.arguments?.getInt("scanId") ?: 0
+            DetailResultScreen(navController, scanId)
         }
     }
 }

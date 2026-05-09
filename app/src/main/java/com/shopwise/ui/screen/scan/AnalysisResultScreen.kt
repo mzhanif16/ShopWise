@@ -79,9 +79,29 @@ fun AnalysisResultScreen(
         textToSpeech = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 textToSpeech?.language = Locale("id", "ID")
-                textToSpeech?.setPitch(1.1f)
+                val voices = textToSpeech?.voices
+                // Cari suara yang: Bahasa Indonesia (id) DAN ada kata "male" atau "man" di namanya
+                val maleVoice = voices?.find { voice ->
+                    voice.locale.language == "id" &&
+                            (voice.name.lowercase().contains("male") || voice.name.lowercase().contains("man"))
+                }
+
+                if (maleVoice != null) {
+                    textToSpeech?.voice = maleVoice
+                    Log.e("TTS_TEST", "Ketemu suara cowo: ${maleVoice.name}")
+                } else {
+                    // Jika tidak ketemu kata "male", coba ambil suara id-ID urutan tertentu
+                    // Biasanya suara ke-1 atau ke-2 di list Google adalah cowo
+                    val backupIndo = voices?.filter { it.locale.language == "id" }
+                    if (backupIndo != null && backupIndo.size > 1) {
+                        // Di banyak device, suara index 0 cewe, index 1 cowo
+                        textToSpeech?.voice = backupIndo[1]
+                    }
+                    Log.e("TTS_TEST", "Suara cowo spesifik tidak ketemu, pakai fallback")
+                }
+
+                textToSpeech?.setPitch(0.9f)
                 textToSpeech?.setSpeechRate(1.0f)
-                
                 // Set listener to detect when speech ends or is stopped
                 textToSpeech?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String?) {
@@ -245,7 +265,7 @@ fun ResultContent(
         val isEnglish = englishKeywords.any { cleanText.contains(it, ignoreCase = true) }
         
         if (isEnglish) {
-            tts?.setLanguage(Locale.US)
+//            tts?.setLanguage(Locale.US)
         } else {
             tts?.setLanguage(Locale("id", "ID"))
         }
@@ -341,9 +361,9 @@ fun ResultContent(
                             contentDescription = null,
                             tint = Color.White,
                             modifier = Modifier.size(40.dp)
-                                .graphicsLayer {
-                                    if (isSafe == null) alpha = pulseAlpha
-                                }
+//                                .graphicsLayer {
+//                                    if (isSafe == null) alpha = pulseAlpha
+//                                }
                         )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
@@ -509,7 +529,7 @@ fun ResultContent(
                 Button(
                     onClick = {
                         navController.navigate(Routes.DASHBOARD) {
-                            popUpTo(Routes.DASHBOARD) { inclusive = true }
+                            popUpTo("${Routes.ANALYSIS_RESULT}/{imageUri}") { inclusive = true }
                         }
                     },
                     enabled = isSafe != null,
@@ -527,14 +547,18 @@ fun ResultContent(
                 ) {
                     val btnText = when(isSafe) {
                         true -> "Back to Dashboard"
-                        false -> "Find Safe Alternatives"
+                        false -> "Back to Dashboard"
                         null -> "Analyzing..."
                     }
                     Text(btnText, fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedButton(
-                    onClick = { /* TODO */ },
+                    onClick = {
+                        navController.navigate(Routes.CHAT) {
+                            popUpTo("${Routes.ANALYSIS_RESULT}/{imageUri}") { inclusive = true }
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
