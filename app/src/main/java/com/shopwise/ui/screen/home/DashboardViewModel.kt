@@ -29,6 +29,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     var selectedModel by mutableStateOf("4B")
         private set
+    
+    var currentBackend by mutableStateOf(userPreferences.getBackend())
+        private set
 
     // Minimum size requirements to consider a model file valid for initialization
     private val MIN_SIZE_4B = 3_000_000_000L // 3GB
@@ -38,6 +41,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         val userData = userPreferences.getUserData()
         val modelId = userData["selectedModel"] as? String ?: "4B"
         selectedModel = modelId
+        currentBackend = userPreferences.getBackend()
         
         val fileName = if (selectedModel == "4B") "gemma-4b.litertlm" else "gemma-2b.litertlm"
         val modelFile = File(context.filesDir, fileName)
@@ -52,20 +56,21 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
             viewModelScope.launch(Dispatchers.IO) {
                 try {
-                    gemmaManager.initialize(modelFile.absolutePath)
+                    val useGpu = currentBackend == "GPU"
+                    gemmaManager.initialize(modelFile.absolutePath, useGpu)
                     withContext(Dispatchers.Main) {
                         GemmaUtils.gemmaManager = gemmaManager
                         isModelInitializing = false
                         isModelReady = true
                         initializationMessage = context.getString(R.string.brain_active)
-                        Log.d(TAG, "Model initialized successfully: $modelId")
+                        Log.d(TAG, "Model initialized successfully: $modelId with $currentBackend")
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to initialize model: $modelId", e)
                     withContext(Dispatchers.Main) {
                         isModelInitializing = false
                         isModelReady = false
-                        errorMessage = e.message ?: e.printStackTrace().toString()
+                        errorMessage = e.message ?: "Unknown Error"
                         initializationMessage = context.getString(R.string.failed_load_model)
                     }
                 }
@@ -99,6 +104,18 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         gemmaManager.close()
         isModelReady = false
         
+        initSelectedModel()
+    }
+    
+    fun updateBackend(backend: String) {
+        if (currentBackend == backend) return
+        
+        userPreferences.setBackend(backend)
+        currentBackend = backend
+        
+        // Restart model with new backend
+        gemmaManager.close()
+        isModelReady = false
         initSelectedModel()
     }
 

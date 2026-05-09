@@ -18,6 +18,7 @@ class UserPreferences(context: Context) {
         private const val KEY_SELECTED_MODEL = "selected_model"
         private const val KEY_IS_ONBOARDED = "is_onboarded"
         private const val KEY_LANGUAGE = "language"
+        private const val KEY_BACKEND = "backend"
     }
 
     fun saveUserData(
@@ -49,6 +50,12 @@ class UserPreferences(context: Context) {
     }
 
     fun getLanguage(): String? = sharedPreferences.getString(KEY_LANGUAGE, null)
+
+    fun setBackend(backend: String) {
+        sharedPreferences.edit { putString(KEY_BACKEND, backend) }
+    }
+
+    fun getBackend(): String = sharedPreferences.getString(KEY_BACKEND, "CPU") ?: "CPU"
 
     fun getUserData(): Map<String, Any?> {
         return mapOf(

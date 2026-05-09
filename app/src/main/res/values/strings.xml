@@ -84,11 +84,12 @@
     <string name="status_alert">ALERT</string>
 
     <!-- Dashboard & Navigation -->
-    <string name="brain_active">Brain Active</string>
+    <string name="brain_active">Model Active</string>
     <string name="initializing">Initializing...</string>
     <string name="failed_load_model">Failed to load model</string>
     <string name="not_downloaded">Not Downloaded</string>
     <string name="ready_to_load">Ready to load</string>
+    <string name="choose_backend">Select a compatible backend</string>
     <string name="nav_home">Home</string>
     <string name="nav_model">Model</string>
     <string name="nav_profile">Profile</string>

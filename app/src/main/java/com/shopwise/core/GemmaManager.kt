@@ -32,18 +32,21 @@ class GemmaManager() {
     )
     val partialResults: SharedFlow<Pair<String, Boolean>> = _partialResults
 
-    fun initialize(modelPath: String) {
+    fun initialize(modelPath: String, useGpu: Boolean = false) {
         close()
         if (engine != null) return
 
         // Cek apakah ini model 4B (multimodal) atau 2B (text-only) berdasarkan nama file
         val isMultimodal = modelPath.contains("4b", ignoreCase = true)
-        Log.d("GemmaManager", "Initializing model: $modelPath, isMultimodal: $isMultimodal")
+        Log.d("GemmaManager", "Initializing model: $modelPath, isMultimodal: $isMultimodal, useGpu: $useGpu")
+
+        val backend = if (useGpu) Backend.GPU() else Backend.CPU()
+        val visionBackend = if (useGpu && isMultimodal) Backend.GPU() else if (isMultimodal) Backend.CPU() else null
 
         val engineConfig = EngineConfig(
             modelPath = modelPath,
-            backend = Backend.CPU(),
-            visionBackend = Backend.CPU(),
+            backend = backend,
+            visionBackend = visionBackend,
             audioBackend = Backend.CPU()
         )
 
@@ -52,7 +55,7 @@ class GemmaManager() {
                 initialize()
             }
             conversation = engine?.createConversation()
-            Log.d("GemmaManager", "Engine initialized successfully")
+            Log.d("GemmaManager", "Engine initialized successfully with ${if (useGpu) "GPU" else "CPU"}")
         } catch (e: Exception) {
             Log.e("GemmaManager", "Failed to create engine", e)
             throw e

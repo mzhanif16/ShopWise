@@ -43,6 +43,7 @@ import com.shopwise.ui.navigation.Routes
 import com.shopwise.ui.theme.PrimaryColor
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Fill
+import compose.icons.evaicons.fill.Camera
 import compose.icons.evaicons.fill.Close
 
 @Composable
@@ -361,7 +362,7 @@ fun QuickPhotoButton(onPhotoClick: () -> Unit) {
                 verticalArrangement = Arrangement.Center
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.img_camera),
+                    imageVector = EvaIcons.Fill.Camera,
                     contentDescription = null,
                     tint = Color.White,
                     modifier = Modifier.size(48.dp)

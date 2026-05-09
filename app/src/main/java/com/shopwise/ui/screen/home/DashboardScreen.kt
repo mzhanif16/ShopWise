@@ -1,5 +1,6 @@
 package com.shopwise.ui.screen.home
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -23,7 +26,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -99,6 +106,7 @@ fun DashboardTopBar(
     val selectedModelId = dashboardViewModel.selectedModel
     val modelState = gemmaViewModel.models[selectedModelId]
     val isReady = dashboardViewModel.isModelReady
+    var showBackendMenu by remember { mutableStateOf(false) }
 
     CenterAlignedTopAppBar(
         title = {
@@ -134,28 +142,74 @@ fun DashboardTopBar(
             }
         },
         actions = {
-            Column(
-                horizontalAlignment = Alignment.End,
-                modifier = Modifier.padding(end = 16.dp)
-            ) {
-                Text(
-                    text = modelState?.name ?: "Gemma $selectedModelId",
-                    fontWeight = FontWeight.Bold,
-                    color = PrimaryColor,
-                    fontSize = 14.sp
-                )
-                if (modelState?.isDownloaded == false) {
+            Box {
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    modifier = Modifier
+                        .padding(end = 16.dp)
+                        .clickable { showBackendMenu = true }
+                ) {
                     Text(
-                        text = stringResource(R.string.not_downloaded),
-                        fontSize = 9.sp,
-                        color = Color.Red,
+                        text = modelState?.name ?: "Gemma $selectedModelId",
+                        fontWeight = FontWeight.Bold,
+                        color = PrimaryColor,
+                        fontSize = 14.sp
+                    )
+                    Text(
+                        text = "Backend: ${dashboardViewModel.currentBackend}",
+                        fontSize = 10.sp,
+                        color = Color.Gray,
                         fontWeight = FontWeight.Medium
                     )
-                } else if (!isReady && !dashboardViewModel.isModelInitializing) {
-                    Text(
-                        text = stringResource(R.string.ready_to_load),
-                        fontSize = 9.sp,
-                        color = Color.Gray
+                    if (modelState?.isDownloaded == false) {
+                        Text(
+                            text = stringResource(R.string.not_downloaded),
+                            fontSize = 9.sp,
+                            color = Color.Red,
+                            fontWeight = FontWeight.Medium
+                        )
+                    } else if (isReady && !dashboardViewModel.isModelInitializing) {
+                        Text(
+                            text = stringResource(R.string.ready_to_load),
+                            fontSize = 9.sp,
+                            color = PrimaryColor
+                        )
+                    }else if (!isReady && !dashboardViewModel.isModelInitializing) {
+                        Text(
+                            text = stringResource(R.string.choose_backend),
+                            fontSize = 9.sp,
+                            color = Color.Red
+                        )
+                    }
+                }
+                
+                DropdownMenu(
+                    expanded = showBackendMenu,
+                    onDismissRequest = { showBackendMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Use CPU") },
+                        onClick = {
+                            showBackendMenu = false
+                            dashboardViewModel.updateBackend("CPU")
+                        },
+                        trailingIcon = {
+                            if (dashboardViewModel.currentBackend == "CPU") {
+                                Icon(Icons.Default.Person, contentDescription = null, tint = PrimaryColor, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Use GPU (Faster)") },
+                        onClick = {
+                            showBackendMenu = false
+                            dashboardViewModel.updateBackend("GPU")
+                        },
+                        trailingIcon = {
+                            if (dashboardViewModel.currentBackend == "GPU") {
+                                Icon(Icons.Default.Person, contentDescription = null, tint = PrimaryColor, modifier = Modifier.size(16.dp))
+                            }
+                        }
                     )
                 }
             }

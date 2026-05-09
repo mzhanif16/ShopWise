@@ -84,11 +84,12 @@
     <string name="status_alert">PERINGATAN</string>
 
     <!-- Dashboard & Navigation -->
-    <string name="brain_active">Otak Aktif</string>
+    <string name="brain_active">Model Aktif</string>
     <string name="initializing">Menginisialisasi...</string>
     <string name="failed_load_model">Gagal memuat model</string>
     <string name="not_downloaded">Belum Diunduh</string>
     <string name="ready_to_load">Siap dimuat</string>
+    <string name="choose_backend">Pilih backend yang mendukung</string>
     <string name="nav_home">Beranda</string>
     <string name="nav_model">Model</string>
     <string name="nav_profile">Profil</string>
