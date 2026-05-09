@@ -141,4 +141,20 @@
     <string name="flash">Flash</string>
     <string name="gallery">Gallery</string>
     <string name="flip">Flip</string>
+
+    <!-- Analysis Result Screen -->
+    <string name="loading_gemma_thinking">Gemma is thinking...</string>
+    <string name="status_danger">DANGER</string>
+    <string name="status_analyzing">ANALYZING</string>
+    <string name="no_allergens_detected">NO ALLERGENS DETECTED</string>
+    <string name="severe_allergen_detected">SEVERE ALLERGEN DETECTED</string>
+    <string name="please_wait">PLEASE WAIT A MOMENT</string>
+    <string name="product_analysis_result">Product Analysis Result</string>
+    <string name="ai_safety_analysis">AI Safety Analysis</string>
+    <string name="captured_photo">Captured Photos</string>
+    <string name="back_to_home">Back to Home</string>
+    <string name="ask_gemma_details">Ask Gemma for Details</string>
+    <string name="reading_labels">Gemma is reading the labels...</string>
+    <string name="scan_metadata">SCAN METADATA</string>
+    <string name="processing_info">Real-time analysis active •\nProcessing by Gemma Intelligence</string>
 </resources>

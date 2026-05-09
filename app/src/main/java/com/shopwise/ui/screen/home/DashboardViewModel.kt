@@ -25,7 +25,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     var isModelInitializing by mutableStateOf(false)
     var isModelReady by mutableStateOf(false)
     var initializationMessage by mutableStateOf("")
-    
+    var errorMessage by mutableStateOf("")
+
     var selectedModel by mutableStateOf("4B")
         private set
 
@@ -64,6 +65,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     withContext(Dispatchers.Main) {
                         isModelInitializing = false
                         isModelReady = false
+                        errorMessage = e.message ?: e.printStackTrace().toString()
                         initializationMessage = context.getString(R.string.failed_load_model)
                     }
                 }

@@ -63,6 +63,8 @@
     <string name="step_indicator">LANGKAH %1$d DARI 3</string>
     <string name="ok">OK</string>
     <string name="cancel">Batal</string>
+    <string name="back">Kembali</string>
+    <string name="done">Selesai</string>
 
     <!-- Home Screen -->
     <string name="welcome_back">SELAMAT DATANG KEMBALI</string>
@@ -131,12 +133,25 @@
 
     <!-- Camera Screen -->
     <string name="camera_title">Penjaga Kesehatan</string>
-    <string name="capture_label">AMBIL GAMBAR UNTUK ANALISIS</string>
+    <string name="capture_label">AMBIL LABEL UNTUK ANALISIS</string>
     <string name="images_ready">%1$d GAMBAR SIAP</string>
-    <string name="camera_desc">Posisikan bahan makanan dengan jelas di layar</string>
+    <string name="camera_desc">Letakkan bahan-bahan dengan jelas dalam pandangan</string>
     <string name="camera_permission_required">Izin kamera diperlukan</string>
     <string name="grant_permission">Berikan Izin</string>
     <string name="flash">Flash</string>
     <string name="gallery">Galeri</string>
-    <string name="flip">Balik</string>
+    <string name="flip">Putar</string>
+
+    <!-- Analysis Result Screen -->
+    <string name="loading_gemma_thinking">Gemma sedang berpikir...</string>
+    <string name="status_danger">BAHAYA</string>
+    <string name="status_analyzing">MENGANALISIS</string>
+    <string name="no_allergens_detected">TIDAK ADA ALERGEN TERDETEKSI</string>
+    <string name="severe_allergen_detected">ALERGEN BERBAHAYA TERDETEKSI</string>
+    <string name="please_wait">MOHON TUNGGU SEBENTAR</string>
+    <string name="product_analysis_result">Hasil Analisis Produk</string>
+    <string name="ai_safety_analysis">Analisis Keamanan AI</string>
+    <string name="captured_photo">Foto yang Diambil</string>
+    <string name="back_to_home">Kembali ke Beranda</string>
+    <string name="ask_gemma_details">Tanya Gemma untuk Detailnya</string>
 </resources>

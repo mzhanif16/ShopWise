@@ -41,6 +41,9 @@ import com.shopwise.R
 import com.shopwise.core.UserPreferences
 import com.shopwise.ui.navigation.Routes
 import com.shopwise.ui.theme.PrimaryColor
+import compose.icons.EvaIcons
+import compose.icons.evaicons.Fill
+import compose.icons.evaicons.fill.Close
 
 @Composable
 fun HomeScreen(
@@ -54,6 +57,8 @@ fun HomeScreen(
     val fullName = (userData["fullName"] as? String) ?: "User"
     val firstName = fullName.split(" ").firstOrNull() ?: "User"
     val allergies = (userData["allergies"] as? Set<*>)?.joinToString(" and ") ?: "None"
+
+    val isReady = dashboardViewModel.isModelReady
     
     val recentScans by homeViewModel.recentScans.collectAsStateWithLifecycle()
 
@@ -94,10 +99,12 @@ fun HomeScreen(
         ) { isInitializing ->
             if (isInitializing) {
                 ModelInitializingAnimation(dashboardViewModel.initializationMessage)
-            } else {
+            } else if (isReady) {
                 QuickPhotoButton(onPhotoClick = {
                     navController.navigate(Routes.CAMERA)
                 })
+            } else {
+                ModelFailedInitialized(dashboardViewModel.initializationMessage,dashboardViewModel.errorMessage)
             }
         }
 
@@ -223,6 +230,47 @@ fun ModelInitializingAnimation(message: String) {
             )
             Text(
                 text = stringResource(R.string.preparing_brain),
+                fontSize = 12.sp,
+                color = Color.Gray,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+fun ModelFailedInitialized(message: String,errorMessage: String) {
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(CircleShape)
+                    .background(Color.Red.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = EvaIcons.Fill.Close,
+                    contentDescription = null,
+                    modifier = Modifier.size(60.dp),
+                    tint = Color.Red
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = message,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = Color.Red
+            )
+            Text(
+                text = errorMessage,
                 fontSize = 12.sp,
                 color = Color.Gray,
                 textAlign = TextAlign.Center

@@ -4,6 +4,7 @@ import android.app.Application
 import android.graphics.Bitmap
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.shopwise.R
 import com.shopwise.core.GemmaUtils
 import com.shopwise.core.UserPreferences
 import com.shopwise.core.database.AppDatabase
@@ -35,25 +36,39 @@ class AnalysisResultViewModel(application: Application) : AndroidViewModel(appli
         if (gemmaManager == null || bitmap == null) return
 
         val userData = userPreferences.getUserData()
-        val allergies = (userData["allergies"] as? Set<*>)?.joinToString(", ") ?: "Tidak ada"
+        val language = userPreferences.getLanguage() ?: "en"
+        val allergies = (userData["allergies"] as? Set<*>)?.joinToString(", ") ?: (if (language == "in") "Tidak ada" else "None")
         
-        val prompt = """
-            Anda adalah "ShopWise", asisten AI spesialis nutrisi, toksikologi makanan, dan penjaga profil medis pengguna. Tugas utama Anda adalah membaca, menganalisis, dan mengevaluasi daftar komposisi makanan dari gambar atau teks yang diberikan.
-            
-            PENTING: Pengguna Anda memiliki kondisi medis yang sangat sensitif dengan alergi: $allergies. 
-            Kesalahan dalam mengidentifikasi bahan makanan dapat berakibat fatal. Banyak produsen makanan menyembunyikan alergen atau bahan berbahaya di balik nama ilmiah, kode E (E-numbers), atau istilah payung seperti "perisa alami".
-            
-            Analisis gambar label makanan ini dan berikan laporan apakah aman atau tidak berdasarkan profil alergi tersebut, jelaskan dengan detail. 
-            Berikan nama produk singkat di baris PERTAMA berikan dengan kata Produk: (nama produk, jika tidak ada berikan saja nama yang tepat menurutmu).
-            Setelah nama produk, baru berikan kata Analisis: (hasil analisis jelaskan secara detail terkait resiko, manfaat, efek samping dll).
-            di akhir reasoning tambahkan kata KESIMPULAN: AMAN / TIDAK AMAN agar saya dapat valuenya.
-        """.trimIndent()
+        val prompt = if (language == "in") {
+            """
+                Anda adalah "ShopWise", asisten AI spesialis nutrisi, toksikologi makanan, dan penjaga profil medis pengguna. Tugas utama Anda adalah membaca, menganalisis, dan mengevaluasi daftar komposisi makanan dari gambar atau teks yang diberikan.
+                
+                PENTING: Pengguna Anda memiliki kondisi medis yang sangat sensitif dengan alergi: $allergies. 
+                Kesalahan dalam mengidentifikasi bahan makanan dapat berakibat fatal. Banyak produsen makanan menyembunyikan alergen atau bahan berbahaya di balik nama ilmiah, kode E (E-numbers), atau istilah payung seperti "perisa alami".
+                
+                Analisis gambar label makanan ini dan berikan laporan apakah aman atau tidak berdasarkan profil alergi tersebut, jelaskan dengan detail dalam Bahasa Indonesia. 
+                Berikan nama produk singkat di baris PERTAMA berikan dengan kata Produk: (nama produk, jika tidak ada berikan saja nama yang tepat menurutmu).
+                Setelah nama produk, baru berikan kata Analisis: (hasil analisis jelaskan secara detail terkait resiko, manfaat, efek samping dll).
+                di akhir reasoning tambahkan kata KESIMPULAN: AMAN / TIDAK AMAN agar saya dapat valuenya.
+            """.trimIndent()
+        } else {
+            """
+                You are "ShopWise", an AI assistant specializing in nutrition, food toxicology, and the user's medical profile guardian. Your main task is to read, analyze, and evaluate the food ingredient list from the provided image or text.
+                
+                IMPORTANT: Your user has a very sensitive medical condition with allergies: $allergies. 
+                Errors in identifying food ingredients can be fatal. Many food manufacturers hide allergens or harmful substances behind scientific names, E-numbers, or umbrella terms like "natural flavors".
+                
+                Analyze this food label image and provide a report on whether it is safe or not based on that allergy profile, explain in detail in English. 
+                Provide a short product name on the FIRST line with the words Product: (product name, if none just give a suitable name in your opinion).
+                After the product name, provide the word Analysis: (analysis results explain in detail regarding risks, benefits, side effects etc.).
+                at the end of reasoning add the word CONCLUSION: SAFE / NOT SAFE so I can get the value.
+            """.trimIndent()
+        }
 
         viewModelScope.launch {
             _isAnalyzing.value = true
             _analysisResult.value = ""
             
-            // Collect results from gemmaManager
             launch {
                 gemmaManager.partialResults.collect { (text, isDone) ->
                     if (text.isNotEmpty()) {
@@ -62,10 +77,7 @@ class AnalysisResultViewModel(application: Application) : AndroidViewModel(appli
                     if (isDone) {
                         _isAnalyzing.value = false
                         val finalResult = _analysisResult.value
-                        
-                        // Extract Info and Save to Database (Including saving bitmap to local file)
-                        saveToHistory(finalResult, bitmap)
-                        
+                        saveToHistory(finalResult, bitmap, language)
                         onComplete(finalResult)
                         this@launch.cancel()
                     }
@@ -90,12 +102,15 @@ class AnalysisResultViewModel(application: Application) : AndroidViewModel(appli
         }
     }
 
-    private fun saveToHistory(result: String, bitmap: List<Bitmap>?) {
-        val isSafe = result.contains("AMAN", ignoreCase = false) && !result.contains("TIDAK AMAN", ignoreCase = false)
+    private fun saveToHistory(result: String, bitmap: List<Bitmap>?, language: String) {
+        val isSafe = if (language == "in") {
+            result.contains("AMAN", ignoreCase = false) && !result.contains("TIDAK AMAN", ignoreCase = false)
+        } else {
+            result.contains("SAFE", ignoreCase = true) && !result.contains("NOT SAFE", ignoreCase = true)
+        }
         
-        // Logika Ekstraksi Nama Produk: antara "Produk:" dan "Analisis"
-        val startTag = "Produk:"
-        val endTag = "Analisis"
+        val startTag = if (language == "in") "Produk:" else "Product:"
+        val endTag = if (language == "in") "Analisis" else "Analysis"
         
         val startIndex = result.indexOf(startTag)
         val endIndex = result.indexOf(endTag)
@@ -103,16 +118,12 @@ class AnalysisResultViewModel(application: Application) : AndroidViewModel(appli
         var productName = if (startIndex != -1 && endIndex != -1 && endIndex > startIndex + startTag.length) {
             result.substring(startIndex + startTag.length, endIndex).trim()
         } else {
-            // Fallback: Ambil baris pertama yang mengandung "Produk:"
             result.split("\n").firstOrNull { it.contains(startTag) }
                 ?.replace(startTag, "")?.trim() 
-                ?: "Unknown Product"
+                ?: (if (language == "in") "Produk Tidak Dikenal" else "Unknown Product")
         }
         
-        // Bersihkan karakter markdown jika ada (seperti **)
         productName = productName.replace("*", "").trim()
-        
-        // Batasi panjang nama produk agar tidak kepanjangan di UI
         val finalProductName = if (productName.length > 35) productName.take(32) + "..." else productName
 
         viewModelScope.launch {

@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -42,6 +43,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.shopwise.R
+import com.shopwise.core.UserPreferences
 import com.shopwise.ui.navigation.Routes
 import com.shopwise.ui.theme.PrimaryColor
 import compose.icons.EvaIcons
@@ -73,49 +75,46 @@ fun AnalysisResultScreen(
     // State to track if TTS is currently speaking
     var isSpeaking by remember { mutableStateOf(false) }
 
+    val userPreferences = remember { UserPreferences(context) }
+    val language = remember { userPreferences.getLanguage() ?: "en" }
+
     // Text to Speech Initialization
     val tts = remember {
         var textToSpeech: TextToSpeech? = null
         textToSpeech = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                textToSpeech?.language = Locale("id", "ID")
+                // Set language based on app preference immediately
+                if (language == "in") {
+                    textToSpeech?.language = Locale("id", "ID")
+                } else {
+                    textToSpeech?.language = Locale.US
+                }
+                
                 val voices = textToSpeech?.voices
-                // Cari suara yang: Bahasa Indonesia (id) DAN ada kata "male" atau "man" di namanya
+                val targetLang = if (language == "in") "id" else "en"
+                
                 val maleVoice = voices?.find { voice ->
-                    voice.locale.language == "id" &&
+                    voice.locale.language == targetLang &&
                             (voice.name.lowercase().contains("male") || voice.name.lowercase().contains("man"))
                 }
 
                 if (maleVoice != null) {
                     textToSpeech?.voice = maleVoice
-                    Log.e("TTS_TEST", "Ketemu suara cowo: ${maleVoice.name}")
                 } else {
-                    // Jika tidak ketemu kata "male", coba ambil suara id-ID urutan tertentu
-                    // Biasanya suara ke-1 atau ke-2 di list Google adalah cowo
-                    val backupIndo = voices?.filter { it.locale.language == "id" }
-                    if (backupIndo != null && backupIndo.size > 1) {
-                        // Di banyak device, suara index 0 cewe, index 1 cowo
-                        textToSpeech?.voice = backupIndo[1]
+                    val backupVoices = voices?.filter { it.locale.language == targetLang }
+                    if (!backupVoices.isNullOrEmpty() && backupVoices.size > 1) {
+                        textToSpeech?.voice = backupVoices[1]
                     }
-                    Log.e("TTS_TEST", "Suara cowo spesifik tidak ketemu, pakai fallback")
                 }
 
                 textToSpeech?.setPitch(0.9f)
                 textToSpeech?.setSpeechRate(1.0f)
-                // Set listener to detect when speech ends or is stopped
+                
                 textToSpeech?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                    override fun onStart(utteranceId: String?) {
-                        isSpeaking = true
-                    }
-                    override fun onDone(utteranceId: String?) {
-                        isSpeaking = false
-                    }
-                    override fun onError(utteranceId: String?) {
-                        isSpeaking = false
-                    }
-                    override fun onStop(utteranceId: String?, interrupted: Boolean) {
-                        isSpeaking = false
-                    }
+                    override fun onStart(utteranceId: String?) { isSpeaking = true }
+                    override fun onDone(utteranceId: String?) { isSpeaking = false }
+                    override fun onError(utteranceId: String?) { isSpeaking = false }
+                    override fun onStop(utteranceId: String?, interrupted: Boolean) { isSpeaking = false }
                 })
             }
         }
@@ -154,8 +153,11 @@ fun AnalysisResultScreen(
                         withContext(Dispatchers.Main) {
                             bitmaps.addAll(loadedBitmaps)
                             viewModel.analyzePicture(loadedBitmaps, imageUri = imageUri) { finalResult ->
-                                isSafe = finalResult.contains("AMAN", ignoreCase = false) && 
-                                         !finalResult.contains("TIDAK AMAN", ignoreCase = false)
+                                isSafe = if (finalResult.contains("CONCLUSION", ignoreCase = true)) {
+                                    finalResult.contains("SAFE", ignoreCase = true) && !finalResult.contains("NOT SAFE", ignoreCase = true)
+                                } else {
+                                    finalResult.contains("AMAN", ignoreCase = false) && !finalResult.contains("TIDAK AMAN", ignoreCase = false)
+                                }
                             }
                         }
                     }
@@ -170,7 +172,7 @@ fun AnalysisResultScreen(
     if (isAnalyzing && analysisResult.isEmpty()) {
         LoadingView()
     } else {
-        ResultContent(navController, bitmaps, isSafe, analysisResult, tts, isAnalyzing, isSpeaking)
+        ResultContent(navController, bitmaps, isSafe, analysisResult, tts, isAnalyzing, isSpeaking, language)
     }
 }
 
@@ -214,7 +216,7 @@ fun LoadingView() {
             }
             Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text = "Gemma is thinking...",
+                text = stringResource(R.string.loading_gemma_thinking),
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.Gray
             )
@@ -239,7 +241,8 @@ fun ResultContent(
     analysisResult: String,
     tts: TextToSpeech?,
     isAnalyzing: Boolean,
-    isSpeaking: Boolean
+    isSpeaking: Boolean,
+    language: String
 ) {
     val scrollState = rememberScrollState()
     
@@ -258,19 +261,16 @@ fun ResultContent(
         }
     }
 
-    // Helper for language detection and speaking
-    fun speakWithAutoLanguage(text: String) {
+    // Helper for speaking based on app language preference
+    fun speakWithAppLanguage(text: String) {
         val cleanText = text.replace("*", "")
-        val englishKeywords = listOf("safe", "danger", "warning", "detected", "analysis", "ingredients", "allergen")
-        val isEnglish = englishKeywords.any { cleanText.contains(it, ignoreCase = true) }
         
-        if (isEnglish) {
-//            tts?.setLanguage(Locale.US)
-        } else {
+        if (language == "in") {
             tts?.setLanguage(Locale("id", "ID"))
+        } else {
+            tts?.setLanguage(Locale.US)
         }
         
-        // Use a unique utterance ID to trigger listener events
         tts?.speak(cleanText, TextToSpeech.QUEUE_FLUSH, null, "analysis_utterance_id")
     }
 
@@ -278,7 +278,7 @@ fun ResultContent(
     LaunchedEffect(isAnalyzing, displayedText) {
         if (!isAnalyzing && analysisResult.isNotEmpty() && !hasSpokenAutomatically) {
             if (displayedText.length >= analysisResult.length) {
-                speakWithAutoLanguage(analysisResult)
+                speakWithAppLanguage(analysisResult)
                 hasSpokenAutomatically = true
             }
         }
@@ -291,23 +291,12 @@ fun ResultContent(
         }
     }
 
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseAlpha"
-    )
-
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        "ShopWise",
+                        stringResource(R.string.app_name),
                         fontWeight = FontWeight.Bold,
                         color = PrimaryColor,
                         fontSize = 20.sp
@@ -361,17 +350,14 @@ fun ResultContent(
                             contentDescription = null,
                             tint = Color.White,
                             modifier = Modifier.size(40.dp)
-//                                .graphicsLayer {
-//                                    if (isSafe == null) alpha = pulseAlpha
-//                                }
                         )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = when(isSafe) {
-                            true -> "SAFE"
-                            false -> "DANGER"
-                            null -> "ANALYZING"
+                            true -> stringResource(R.string.status_safe)
+                            false -> stringResource(R.string.status_danger)
+                            null -> stringResource(R.string.status_analyzing)
                         },
                         fontSize = 32.sp,
                         fontWeight = FontWeight.ExtraBold,
@@ -379,9 +365,9 @@ fun ResultContent(
                     )
                     Text(
                         text = when(isSafe) {
-                            true -> "NO ALLERGENS DETECTED"
-                            false -> "SEVERE ALLERGEN DETECTED"
-                            null -> "PLEASE WAIT A MOMENT"
+                            true -> stringResource(R.string.no_allergens_detected)
+                            false -> stringResource(R.string.severe_allergen_detected)
+                            null -> stringResource(R.string.please_wait)
                         },
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
@@ -395,7 +381,7 @@ fun ResultContent(
                         shape = RoundedCornerShape(24.dp)
                     ) {
                         Text(
-                            text = "Product Analysis Result",
+                            text = stringResource(R.string.product_analysis_result),
                             modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
                             textAlign = TextAlign.Center,
                             fontWeight = FontWeight.Bold,
@@ -435,7 +421,7 @@ fun ResultContent(
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                "AI Safety Analysis",
+                                text = stringResource(R.string.ai_safety_analysis),
                                 fontWeight = FontWeight.Bold,
                                 color = boxTextColor,
                                 fontSize = 24.sp
@@ -443,7 +429,7 @@ fun ResultContent(
                         }
                         Spacer(modifier = Modifier.height(16.dp))
                         MarkdownText(
-                            markdown = displayedText.ifEmpty { "Gemma is reading the labels..." },
+                            markdown = displayedText.ifEmpty { stringResource(R.string.reading_labels) },
                             style = TextStyle(
                                 color = boxTextColor,
                                 fontSize = 14.sp,
@@ -458,10 +444,8 @@ fun ResultContent(
                             onClick = { 
                                 if (isSpeaking) {
                                     tts?.stop()
-                                    // Manually reset state for immediate UI feedback
-                                    // isSpeaking is also handled in listener onStop
                                 } else {
-                                    speakWithAutoLanguage(analysisResult)
+                                    speakWithAppLanguage(analysisResult)
                                 }
                             },
                             modifier = Modifier
@@ -483,7 +467,7 @@ fun ResultContent(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Photo Preview(s)
-            Text("Captured Photos", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
+            Text(stringResource(R.string.captured_photo), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
             Spacer(modifier = Modifier.height(8.dp))
             bitmaps.forEach { bmp ->
                 Image(
@@ -510,9 +494,9 @@ fun ResultContent(
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
-                    Text("SCAN METADATA", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+                    Text(stringResource(R.string.scan_metadata), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
                     Text(
-                        text = "Real-time analysis active •\nProcessing by Gemma Intelligence",
+                        text = stringResource(R.string.processing_info),
                         fontSize = 12.sp,
                         color = Color.Gray,
                         lineHeight = 18.sp
@@ -545,11 +529,7 @@ fun ResultContent(
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    val btnText = when(isSafe) {
-                        true -> "Back to Dashboard"
-                        false -> "Back to Dashboard"
-                        null -> "Analyzing..."
-                    }
+                    val btnText = if (isSafe != null) stringResource(R.string.back_to_home) else stringResource(R.string.initializing)
                     Text(btnText, fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.height(12.dp))
@@ -572,7 +552,7 @@ fun ResultContent(
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Ask Gemma for Details", color = Color(0xFF0277BD))
+                        Text(stringResource(R.string.ask_gemma_details), color = Color(0xFF0277BD))
                     }
                 }
             }
