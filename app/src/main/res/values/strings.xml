@@ -69,7 +69,7 @@
     <!-- Home Screen -->
     <string name="welcome_back">WELCOME BACK</string>
     <string name="hello_user">Hello, %1$s!</string>
-    <string name="allergy_status_active">Your allergy profile is active. Scanning for %1$s.</string>
+    <string name="allergy_status_active">Your allergy profile is active. Scanning for </string>
     <string name="quick_photo">QUICK PHOTO</string>
     <string name="ai_assistant_ready">AI Assistant ready for\ningredient analysis</string>
     <string name="recent_scans">Recent Scans</string>

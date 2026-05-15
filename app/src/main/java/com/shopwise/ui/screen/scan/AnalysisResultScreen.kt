@@ -512,9 +512,7 @@ fun ResultContent(
             ) {
                 Button(
                     onClick = {
-                        navController.navigate(Routes.DASHBOARD) {
-                            popUpTo("${Routes.ANALYSIS_RESULT}/{imageUri}") { inclusive = true }
-                        }
+                        navController.popBackStack()
                     },
                     enabled = isSafe != null,
                     modifier = Modifier

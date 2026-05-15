@@ -36,12 +36,8 @@ class GemmaManager() {
         close()
         if (engine != null) return
 
-        // Cek apakah ini model 4B (multimodal) atau 2B (text-only) berdasarkan nama file
-        val isMultimodal = modelPath.contains("4b", ignoreCase = true)
-        Log.d("GemmaManager", "Initializing model: $modelPath, isMultimodal: $isMultimodal, useGpu: $useGpu")
-
         val backend = if (useGpu) Backend.GPU() else Backend.CPU()
-        val visionBackend = if (useGpu && isMultimodal) Backend.GPU() else if (isMultimodal) Backend.CPU() else null
+        val visionBackend = if (useGpu) Backend.GPU() else  Backend.CPU()
 
         val engineConfig = EngineConfig(
             modelPath = modelPath,

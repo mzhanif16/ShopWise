@@ -69,7 +69,7 @@
     <!-- Home Screen -->
     <string name="welcome_back">SELAMAT DATANG KEMBALI</string>
     <string name="hello_user">Halo, %1$s!</string>
-    <string name="allergy_status_active">Profil alergi Anda aktif. Memindai untuk %1$s.</string>
+    <string name="allergy_status_active">Profil alergi Anda aktif. Memindai untuk </string>
     <string name="quick_photo">FOTO CEPAT</string>
     <string name="ai_assistant_ready">Asisten AI siap untuk\nanalisis bahan</string>
     <string name="recent_scans">Pemindaian Terkini</string>
